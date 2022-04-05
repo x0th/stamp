@@ -47,20 +47,32 @@ string error_msg(string error) {
 	return out;
 }
 
+inline void next_token() {
+	tok = scan(raw_str, &position);
+}
+
+inline void match(TokenType expected) {
+	next_token();
+	if (tok.type != expected) {
+		Token t = Token({ type: expected, value: "" });
+		throw error_msg(error_msg("Expected " + token_readable(&t) + ". Found: " + token_readable(&tok)));
+	}
+}
+
 bool request_line() {
 	if (line_number + 1 == file.size())
 		return false;
 	
 	raw_str = file[++line_number];
 	position = 0;
-	tok = scan(raw_str, &position);
+	next_token();
 	
 	return true;
 }
 
 ASTNode *parse_program() {
 	ASTNode *s = new ASTNode(Token { type: TokSList, value: "" });
-	tok = scan(raw_str, &position);
+	next_token();
 
 	try {
 		parse_statement_list(s);
@@ -76,7 +88,7 @@ void parse_statement_list(ASTNode *s) {
 	ASTNode *st;
 	switch (tok.type) {
 		case TokStatementEnd: {
-			tok = scan(raw_str, &position);
+			next_token();
 			parse_statement_list(s);
 			return;
 		}
@@ -107,25 +119,25 @@ ASTNode *parse_statement() {
 		case TokObject:
 		{
 			auto object = new ASTNode(tok);
-			tok = scan(raw_str, &position); // obj
+			next_token(); // obj
 			return parse_statement_tail(object);
 		}
 		case TokValue:
 		{
 			auto object = new ASTNode(Token { type: TokObject, value: tok.value });
-			tok = scan(raw_str, &position); // obj
+			next_token(); // obj
 			return parse_statement_tail(object);
 		}
 		case TokFn:
 		{
-			tok = scan(raw_str, &position); // fn
+			next_token(); // fn
 			auto fn_name = new ASTNode(Token { type: TokValue, value: tok.value });
 			vector<ASTNode *> callable_children;
 			callable_children.push_back(new ASTNode(Token { type: TokObject, value: "Callable" }));
 			callable_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
 			callable_children[1]->get_children().push_back(fn_name);
 			ASTNode *clone_callable = new ASTNode(Token { type: TokSend, value: "" }, callable_children);
-			tok = scan(raw_str, &position); // fn_name
+			next_token(); // fn_name
 			return parse_function_tail(clone_callable);
 		}
 		default:
@@ -136,10 +148,10 @@ ASTNode *parse_statement() {
 ASTNode *parse_function_tail(ASTNode *function) {
 	switch(tok.type) {
 		case TokOpenParend: {
-			tok = scan(raw_str, &position); // (
+			next_token(); // (
 			vector<ASTNode *> children;
 			children.push_back(parse_function_signature(function));
-			tok = scan(raw_str, &position); // )
+			match(TokCloseParend); // )
 			vector<ASTNode *> msg_children;
 			msg_children.push_back(parse_program());
 			children.push_back(new ASTNode(Token { type: TokMessage, value: "store_body" }, msg_children));
@@ -151,7 +163,7 @@ ASTNode *parse_function_tail(ASTNode *function) {
 			throw error_msg("Unexpected end of file.");
 		}
 		default:
-			throw error_msg("Expected (. Found " + token_str(&tok) + ".");
+			throw error_msg("Expected (. Found " + token_readable(&tok) + ".");
 	}
 }
 
@@ -166,13 +178,13 @@ ASTNode *parse_statement_tail(ASTNode *object) {
 			vector<ASTNode *>children;
 			children.push_back(object);
 			children.push_back(new ASTNode(tok));
-			tok = scan(raw_str, &position); // =
-			tok = scan(raw_str, &position);
+			match(TokStore); // =
+			next_token();
 			children.push_back(parse_rhs(children[1]));
 			return new ASTNode(Token { type: TokStore, value: "" }, children);
 		}
 		case TokStore: {
-			tok = scan(raw_str, &position);
+			next_token();
 			auto rhs = parse_rhs(object);
 			rhs->get_children()[1]->get_children().push_back(object);
 			return rhs;
@@ -182,17 +194,17 @@ ASTNode *parse_statement_tail(ASTNode *object) {
 		case TokComa:
 		case TokCloseParend:
 		case TokSListEnd:
-			tok = scan(raw_str, &position);
+			next_token();
 			return object;
 		default:
-			throw error_msg("Expected Object, message, value, =, (, ), ;, } or ,. Found: " + token_str(&tok) + ".");
+			throw error_msg("Expected Object, message, value, =, (, ), ;, } or ,. Found: " + token_readable(&tok) + ".");
 	};
 }
 
 ASTNode *parse_rhs(ASTNode *object) {
 	switch(tok.type) {
 		case TokFn: {
-			tok = scan(raw_str, &position); // fn
+			next_token(); // fn
 			vector<ASTNode *> callable_children;
 			callable_children.push_back(new ASTNode(Token { type: TokObject, value: "Callable" }));
 			callable_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
@@ -209,7 +221,7 @@ ASTNode *parse_rhs(ASTNode *object) {
 			throw error_msg("Unexpected end of file.");
 		}
 		default:
-			throw error_msg("Expected function declaration, Object or value. Found: " + token_str(&tok) + ".");
+			throw error_msg("Expected function declaration, Object or value. Found: " + token_readable(&tok) + ".");
 	}
 }
 
@@ -217,16 +229,16 @@ ASTNode *parse_statement_rhs() {
 	switch (tok.type) {
 		case TokObject: {
 			auto object = new ASTNode(tok);
-			tok = scan(raw_str, &position); // obj
+			next_token(); // obj
 			return parse_message_tail(object);
 		}
 		case TokValue: {
 			auto object = new ASTNode(Token { type: TokObject, value: tok.value });
-			tok = scan(raw_str, &position); // obj
+			next_token(); // obj
 			return parse_message_tail(object);
 		}
 		default:
-			throw error_msg("Expected Object or value. Found: " + token_str(&tok) + ".");
+			throw error_msg("Expected Object or value. Found: " + token_readable(&tok) + ".");
 	}
 }
 
@@ -237,7 +249,7 @@ ASTNode *parse_parameters(ASTNode *s) {
 		case TokCloseParend:
 			return s;
 		case TokComa:
-			tok = scan(raw_str, &position);
+			next_token();
 			return parse_parameters(s);
 		case TokObject:
 		case TokValue:
@@ -252,7 +264,7 @@ ASTNode *parse_parameters(ASTNode *s) {
 			}
 			return parse_parameters(further);
 		default:
-			throw error_msg("Expected Object, value, ) or ,. Found: " + token_str(&tok) + ".");
+			throw error_msg("Expected Object, value, ) or ,. Found: " + token_readable(&tok) + ".");
 	}
 }
 
@@ -267,7 +279,7 @@ ASTNode *parse_function_signature(ASTNode *function) {
 			ASTNode *message = new ASTNode(Token { type: TokMessage, value: "store_param" });
 			message->get_children().push_back(new ASTNode(tok));
 			children.push_back(message);
-			tok = scan(raw_str, &position);
+			next_token();
 			return parse_param_type(new ASTNode(Token { type: TokSend, value: "" }, children));
 		}
 		case TokEOF: {
@@ -276,7 +288,7 @@ ASTNode *parse_function_signature(ASTNode *function) {
 			throw error_msg("Unexpected end of file.");
 		}
 		default:
-			throw error_msg("Expected value or ). Found: " + token_str(&tok) + ".");
+			throw error_msg("Expected value or ). Found: " + token_readable(&tok) + ".");
 	}	
 }
 
@@ -293,19 +305,19 @@ ASTNode *parse_param_type(ASTNode *param) {
 			throw error_msg("Unexpected end of file.");
 		}
 		default:
-			throw error_msg("Expected , or ). Found: " + token_str(&tok) + ".");
+			throw error_msg("Expected , or ). Found: " + token_readable(&tok) + ".");
 	}
 }
 
 ASTNode *parse_next_param(ASTNode *so_far) {
 	switch(tok.type) {
 		case TokComa:
-			tok = scan(raw_str, &position);
+			next_token();
 			return parse_function_signature(so_far);
 		case TokCloseParend:
 			return so_far;
 		default:
-			throw error_msg("Expected , or ). Found: " + token_str(&tok) + ".");
+			throw error_msg("Expected , or ). Found: " + token_readable(&tok) + ".");
 	}
 }
 
@@ -314,22 +326,22 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 		case TokObject:
 		case TokValue: {
 			previous_message->get_children()[1]->get_children().push_back(new ASTNode(tok));
-			tok = scan(raw_str, &position);
+			next_token();
 			return previous_message;
 		}
 		case TokMessage: {
 			vector<ASTNode *> children;
 			children.push_back(previous_message);
 			children.push_back(new ASTNode(tok));
-			tok = scan(raw_str, &position);
+			next_token();
 			return parse_message_tail(new ASTNode(Token { type: TokSend, value: "" }, children));
 		}
 		case TokOpenParend: {
-			tok = scan(raw_str, &position); // (
+			next_token(); // (
 			vector<ASTNode *> children;
 			children.push_back(parse_parameters(previous_message));
 			children.push_back(new ASTNode(Token { type: TokMessage, value: "call" }));
-			tok = scan(raw_str, &position); // )
+			next_token(); // )
 			return parse_message_tail(new ASTNode(Token { type: TokSend, value: "" }, children));
 		}
 		case TokEOF: {
@@ -343,7 +355,7 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 		case TokCloseParend:
 			return previous_message;
 		default:
-			throw error_msg("Expected Object, message, value, message, (, ), ;, }, EOF or ,. Found: " + token_str(&tok) + ".");
+			throw error_msg("Expected Object, message, value, message, (, ), ;, }, EOF or ,. Found: " + token_readable(&tok) + ".");
 	};
 }
 

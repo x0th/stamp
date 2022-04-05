@@ -32,3 +32,4 @@ struct Token
 };
 
 std::string token_str(Token *token);
+std::string token_readable(Token *token);

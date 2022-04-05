@@ -31,3 +31,23 @@ string token_str(Token *token) {
 	}
 	return s + "(" + token->value + ")";
 }
+
+string token_readable(Token *token) {
+	switch (token->type) {
+		case TokObject: return token->value;
+		case TokMessage: return token->value;
+		case TokSend: return "Send";
+		case TokStore: return "=";
+		case TokValue: return token->value;
+		case TokEOF: return "EOF";
+		case TokStatementEnd: return ";";
+		case TokSList: return "Statement List";
+		case TokSListBegin: return "{";
+		case TokSListEnd: return "}";
+		case TokOpenParend: return "(";
+		case TokCloseParend: return ")";
+		case TokComa: return ",";
+		case TokFn: return "fn";
+	}
+	return "";
+}
