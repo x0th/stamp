@@ -8,4 +8,4 @@
 
 #include "ast.h"
 
-ASTNode *parse(string);
+ASTNode *parse(string&, vector<string>&);

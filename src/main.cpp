@@ -18,8 +18,13 @@ void interpret_cmdline() {
 		cout << "> ";
 		string line;
 		getline(cin, line);
+		vector<string> program;
+		program.push_back(line);
+		string filename;
 
-		auto ast = parse(line);
+		auto ast = parse(filename, program);
+		if (!ast)
+			continue;
 
 #ifdef DEBUG
 		cout << ast->to_string();
@@ -41,13 +46,15 @@ void interpret_file(string filename) {
 		exit(1);
 	}
 
-	stringstream program;
+	vector<string> program;
 	string line;
 	while (getline(source_file, line)) {
-		program << line;
+		program.push_back(line);
 	}
 
-	auto ast = parse(program.str());
+	auto ast = parse(filename, program);
+	if (!ast)
+		return;
 
 	#ifdef DEBUG
 		cout << ast->to_string();
