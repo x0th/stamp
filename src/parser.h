@@ -9,3 +9,4 @@
 #include "ast.h"
 
 ASTNode *parse(string&, vector<string>&);
+string error_msg(string error);

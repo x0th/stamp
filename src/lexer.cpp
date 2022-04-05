@@ -11,6 +11,7 @@
 
 #include "lexer.h"
 #include "token.h"
+#include "parser.h"
 
 using namespace std;
 
@@ -55,18 +56,16 @@ Token scan(string &raw_string, int *position) {
 		}
 		default: {
 			do {
-                token_image[i++] = c;
-                if (i >= MAX_TOKEN_LEN) {
-                        std::cout << "Maximum token length exceeded.\n";
-                        exit(1);
-                }
-                c = scan_char(raw_string, position);
-            } while (isalpha(c) || isdigit(c) || c == '_');
-            token_image[i] = '\0';
+				token_image[i++] = c;
+				if (i >= MAX_TOKEN_LEN)
+					throw error_msg("Maximum token length exceeded.");
+				c = scan_char(raw_string, position);
+			} while (isalpha(c) || isdigit(c) || c == '_');
+			token_image[i] = '\0';
 
-            if (token_image == string("fn")) return Token({ type: TokFn, value: "" });
-            if (token_image[0] >= 65 && token_image[0] <= 90) return Token({ type: TokObject, value: token_image });
-            return is_message ? Token({ type: TokMessage, value: token_image }) : Token({ type: TokValue, value: token_image });
+			if (token_image == string("fn")) return Token({ type: TokFn, value: "" });
+			if (token_image[0] >= 65 && token_image[0] <= 90) return Token({ type: TokObject, value: token_image });
+			return is_message ? Token({ type: TokMessage, value: token_image }) : Token({ type: TokValue, value: token_image });
 		}
 	}
 }
