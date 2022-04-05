@@ -21,11 +21,15 @@ void interpret_cmdline() {
 
 		auto ast = parse(line);
 
+#ifdef DEBUG
 		cout << ast->to_string();
+#endif
 
 		cout << ast->visit() << "\n";
 
+#ifdef DEBUG
 		global_context->dump();
+#endif
 	}
 }
 
@@ -43,16 +47,25 @@ void interpret_file(string filename) {
 		program << line;
 	}
 
-	auto ast = parse(program.str());	
+	auto ast = parse(program.str());
+
+	#ifdef DEBUG
+		cout << ast->to_string();
+	#endif
+
 	cout << ast->visit() << "\n";
 
+#ifdef DEBUG
 	global_context->dump();
+#endif
 }
 
 int main(int argc, char *argv[]) {
 	initialize_global_context();
 
+#ifdef DEBUG
 	global_context->dump();
+#endif
 
 	if (argc > 1)
 		interpret_file(argv[1]);
