@@ -1,0 +1,3 @@
+STDOUT:
+STDERR:
+tests/rel/parser_unexpected_eof.st:1:9: Unexpected end of file.

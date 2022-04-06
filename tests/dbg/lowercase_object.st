@@ -1,0 +1,2 @@
+obj = Object^;
+obj.type

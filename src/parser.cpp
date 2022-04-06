@@ -72,12 +72,11 @@ bool request_line() {
 
 ASTNode *parse_program() {
 	ASTNode *s = new ASTNode(Token { type: TokSList, value: "" });
-	next_token();
-
 	try {
+		next_token();
 		parse_statement_list(s);
 	} catch (string &msg) {
-		cout << msg;
+		cerr << msg;
 		return nullptr;
 	}
 	
@@ -108,6 +107,8 @@ void parse_statement_list(ASTNode *s) {
 				parse_statement_list(s);
 			return;
 		case TokSListEnd:
+			next_token();
+			return;
 		default:
 			return;
 	}
@@ -151,7 +152,7 @@ ASTNode *parse_function_tail(ASTNode *function) {
 			next_token(); // (
 			vector<ASTNode *> children;
 			children.push_back(parse_function_signature(function));
-			match(TokCloseParend); // )
+			next_token(); // )
 			vector<ASTNode *> msg_children;
 			msg_children.push_back(parse_program());
 			children.push_back(new ASTNode(Token { type: TokMessage, value: "store_body" }, msg_children));

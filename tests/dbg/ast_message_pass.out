@@ -1,0 +1,23 @@
+STDOUT:
+----------------------
+Context:
+Callable = Callable-hash
+List = List-hash
+Object = Object-hash
+false = false
+true = true
+----------------------
+TokSList()
+  TokSend()
+    TokObject(Object)
+    TokMessage(type)
+Object
+----------------------
+Context:
+Callable = Callable-hash
+List = List-hash
+Object = Object-hash
+false = false
+true = true
+----------------------
+STDERR:

@@ -1,0 +1,1 @@
+Object test = Object.type

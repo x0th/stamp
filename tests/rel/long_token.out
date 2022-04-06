@@ -1,0 +1,3 @@
+STDOUT:
+STDERR:
+tests/rel/long_token.st:1:128: Maximum token length exceeded.

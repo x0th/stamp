@@ -24,12 +24,13 @@ Object *Object::send(Message &message, string *out) {
 		if (!prototype)
 			*out = "None";
 		return prototype;
+#ifdef DEBUG
 	} else if (message.get_name() == "context") {
-		// FIXME: for debugging purposes only
 		context->dump();
 
 		*out = " ";
 		return nullptr;
+#endif
 	} else {
 		auto name = message.get_name();
 		// have in our table, handle
@@ -242,6 +243,6 @@ string Object::to_string() {
 	string out;
 	Message msg("type", nullptr);
 	send(msg, &out);
-	s << out << "_" << hex << hash;
+	s << out << "-" << hex << hash;
 	return s.str();
 }
