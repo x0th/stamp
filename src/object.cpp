@@ -41,7 +41,7 @@ Object *Object::send(Message &message, string *out) {
 			case Store::Type::Literal: {
 				auto lit = *store->get_lit();
 				if (lit.size() >= 2 && lit[0] == ':' && lit[1] == ':')
-					return handle_default(lit, message.get_sender(), out);
+					return handle_default(lit, message.get_sender(), out, message.get_requester());
 				*out = lit;
 				return nullptr;
 			}
@@ -51,6 +51,8 @@ Object *Object::send(Message &message, string *out) {
 
 		// forward to prototype
 		if (prototype) {
+			if (!message.get_requester())
+				message.set_requester(this);
 			return prototype->send(message, out);
 		}
 
@@ -61,7 +63,7 @@ Object *Object::send(Message &message, string *out) {
 	return nullptr;
 }
 
-Object *Object::handle_default(string &lit, ASTNode *sender, string *out) {
+Object *Object::handle_default(string &lit, ASTNode *sender, string *out, Object *requester) {
 	if (lit == "::clone") {
 		return clone(sender);
 	} else if (lit == "::clone_callable") {
@@ -69,21 +71,28 @@ Object *Object::handle_default(string &lit, ASTNode *sender, string *out) {
 	} else if (lit == "::clone_list") {
 		return clone_list(sender);
 	} else if (lit == "::==") {
-		auto sender_obj = global_context->get(sender->token.value);
-		if (hash == sender_obj->get_hash()) {
+		int use_hash = hash;
+		if (requester)
+			use_hash = requester->get_hash();
+		
+		if (use_hash == global_context->get(sender->token.value)->get_hash()) {
 			return global_context->get("true");
 		} else {
 			return global_context->get("false");
 		}
 	} else if (lit == "::!=") {
-		auto sender_obj = global_context->get(sender->token.value);
-		if (hash != sender_obj->get_hash()) {
+		int use_hash = hash;
+		if (requester)
+			use_hash = requester->get_hash();
+
+		if (use_hash != global_context->get(sender->token.value)->get_hash()) {
 			return global_context->get("true");
 		} else {
 			return global_context->get("false");
 		}
 	} else if (lit == "::get") {
-		auto element = (*stores["internal"]->get_list())[stoi(sender->token.value)];
+		auto use_stores = requester ? requester->get_stores()["internal"] : stores["internal"];
+		auto element = (*use_stores->get_list())[stoi(sender->token.value)];
 		auto element_type = element->get_store_type();
 		if (element_type == Store::Type::Object) {
 			return element->get_obj();
@@ -92,34 +101,49 @@ Object *Object::handle_default(string &lit, ASTNode *sender, string *out) {
 			return nullptr;
 		}
 	} else if (lit == "::push") {
+		auto use_stores = requester ? requester->get_stores()["internal"] : stores["internal"];
 		switch (sender->token.type) {
-			case TokObject: stores["internal"]->get_list()->push_back(new Store(context->get(sender->token.value))); break;
-			case TokSList: stores["internal"]->get_list()->push_back(new Store(sender)); break;
+			case TokObject: use_stores->get_list()->push_back(new Store(context->get(sender->token.value))); break;
+			case TokSList: use_stores->get_list()->push_back(new Store(sender)); break;
 			case TokSend: {
 				string sout;
 				auto obj = sender->visit_statement(&sout, context);
 				if (sout != "")
-					stores["internal"]->get_list()->push_back(new Store(new string(sout)));
+					use_stores->get_list()->push_back(new Store(new string(sout)));
 				else
-					stores["internal"]->get_list()->push_back(new Store(obj));
+					use_stores->get_list()->push_back(new Store(obj));
 				break;
 			}
-			case TokValue: stores["internal"]->get_list()->push_back(new Store(new string(sender->token.value))); break;
+			case TokValue: use_stores->get_list()->push_back(new Store(new string(sender->token.value))); break;
 			default: exit(1); // FIXME: error
 		}
 		return this;
 	} else if (lit == "::size") {
-		*out = std::to_string(stores["internal"]->get_list()->size());
+		auto use_stores = requester ? requester->get_stores()["internal"] : stores["internal"];
+		*out = std::to_string(use_stores->get_list()->size());
 		return nullptr;
 	} else if (lit == "::store_param") {
-		Message msg("push", sender);
+		Message msg("push", sender, nullptr);
 		string sout;
+
+		if (requester) {
+			requester->get_stores()["param_names"]->get_obj()->send(msg, &sout);
+			return requester;
+		}
+
 		stores["param_names"]->get_obj()->send(msg, &sout);
 		return this;
 	} else if (lit == "::store_body") {
+		if (requester) {
+			requester->store_exe("body", sender);
+			return requester;
+		}
+
 		store_exe("body", sender);
 		return this;
 	} else if (lit == "::call") {
+		auto obj = requester ? requester : this;
+
 		// Store context
 		auto stored_context = context;
 		
@@ -127,30 +151,31 @@ Object *Object::handle_default(string &lit, ASTNode *sender, string *out) {
 		context = new Context();
 		
 		// put passed parameters in context
-		auto param_names = stores["param_names"]->get_obj();
-		auto param_binds = stores["param_binds"]->get_obj();
+		auto param_names = obj->get_stores()["param_names"]->get_obj();
+		auto param_binds = obj->get_stores()["param_binds"]->get_obj();
 		
 		// FIXME: verify that two lists are of equal size
-		Message size_msg("size", nullptr);
+		Message size_msg("size", nullptr, nullptr);
 		string size_str;
 		param_names->send(size_msg, &size_str);
 		int size = stoi(size_str);
 
 		auto get_sender = new ASTNode(Token { type: TokValue, value: "0" });
-		Message get_msg("get", get_sender);
+		Message get_msg("get", get_sender, nullptr);
 
 		for (int i = 0; i < size; i++) {
 			get_sender->token.value = std::to_string(i);
 			string obj_name;
 			param_names->send(get_msg, &obj_name);
-			auto obj = param_binds->send(get_msg, nullptr);
+			get_msg.set_requester(param_binds);
+			auto msg_obj = param_binds->send(get_msg, nullptr);
 
-			context->add(obj, obj_name);
+			context->add(msg_obj, obj_name);
 		}
 
 		// execute body
 		string sout;
-		auto obj = stores["body"]->get_exe()->visit_statement(&sout, context);
+		auto obj_out = obj->get_stores()["body"]->get_exe()->visit_statement(&sout, context);
 		if (sout != "")
 			*out = sout;
 
@@ -158,13 +183,18 @@ Object *Object::handle_default(string &lit, ASTNode *sender, string *out) {
 		delete context;
 		context = stored_context;
 
-		return obj;
+		return obj_out;
 	} else if (lit == "::pass_param") {
-		Message msg("push", sender);
+		Message msg("push", sender, nullptr);
 		string sout;
-		stores["param_binds"]->get_obj()->send(msg, &sout);
-		// FIXME: verify that we stored an object
 
+		// FIXME: verify that we stored an object
+		if (requester) {
+			requester->get_stores()["param_binds"]->get_obj()->send(msg, &sout);
+			return requester;
+		}
+
+		stores["param_binds"]->get_obj()->send(msg, &sout);
 		return this;
 	}
 
@@ -191,8 +221,6 @@ Object *Object::clone(ASTNode *sender) {
 	Object *cloned = new Object(this);
 	string new_type = sender ? sender->token.value : std::to_string(cloned->get_hash());
 
-	cloned->get_stores().insert({ "==", stores.at("==") });
-	cloned->get_stores().insert({ "!=", stores.at("!=") });
 	if (new_type[0] >= 65 && new_type[0] <= 90) {
 		cloned->store_lit("type", new string(new_type));
 		cloned->store_lit("clone", new string("::clone"));
@@ -211,10 +239,6 @@ Object *Object::clone_callable(ASTNode *sender) {
 	cloned->store_obj("param_names", param_names_list);
 	cloned->store_obj("param_binds", param_binds_list);
 	cloned->store_lit("clone", new string("::clone_callable"));
-	cloned->store_lit("store_param", new string("::store_param"));
-	cloned->store_lit("pass_param", new string("::pass_param"));
-	cloned->store_lit("call", new string("::call"));
-	cloned->store_lit("store_body", new string("::store_body"));
 	cloned->context->add(param_names_list, "param_names_list");
 	cloned->context->add(param_binds_list, "param_binds_list");
 
@@ -225,10 +249,7 @@ Object *Object::clone_list(ASTNode *sender) {
 	Object * cloned = clone(sender);
 
 	cloned->store_list("internal", new vector<Store *>());
-	cloned->store_lit("get", new string("::get"));
-	cloned->store_lit("push", new string("::push"));
 	cloned->store_lit("clone", new string("::clone_list"));
-	cloned->store_lit("size", new string("::size"));
 
 	return cloned;
 }
@@ -241,7 +262,7 @@ string Object::to_string() {
 
 	stringstream s;
 	string out;
-	Message msg("type", nullptr);
+	Message msg("type", nullptr, nullptr);
 	send(msg, &out);
 	s << out << "-" << hex << hash;
 	return s.str();

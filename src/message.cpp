@@ -11,6 +11,10 @@
 
 using namespace std;
 
-Message::Message(string name, ASTNode *sender) : name(name), sender(sender) {}
+Message::Message(string name, ASTNode *sender, Object *requester) : name(name), sender(sender), requester(requester) {}
 
 ASTNode *Message::get_sender() { return sender; }
+
+Object *Message::get_requester() { return requester; }
+
+void Message::set_requester(Object *req) { requester = req; }

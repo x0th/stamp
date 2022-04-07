@@ -84,6 +84,6 @@ private:
 	map<string, Store *> stores;
 	Context *context;
 
-	Object *handle_default(string &lit, ASTNode *sender, string *out);
+	Object *handle_default(string &lit, ASTNode *sender, string *out, Object *reqester);
 	Object *clone_callable(ASTNode *sender);
 };

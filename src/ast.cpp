@@ -56,9 +56,9 @@ Object *ASTNode::visit_object(Context *context) {
 
 Message ASTNode::visit_message() {
 	if (children.size() == 0)
-		return Message(token.value, nullptr);
+		return Message(token.value, nullptr, nullptr);
 	
-	return Message(token.value, children[0]);
+	return Message(token.value, children[0], nullptr);
 }
 
 Object *ASTNode::visit_send(string *out, Context *context) {
