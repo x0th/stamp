@@ -36,6 +36,7 @@ void Context::dump() {
 		switch(c.second->get_store_type()) {
 			case Store::Type::Object: cout << c.second->get_obj()->to_string() << "\n"; break;
 			case Store::Type::Executable: cout << "Code\n"; break;
+			case Store::Type::Literal: cout << "Literal(" << *c.second->get_lit() << ")\n"; break;
 			default: cout << "\n"; continue; // FIXME: print other types
 		}
 	}

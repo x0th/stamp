@@ -30,7 +30,7 @@ public:
 
 	string visit();
 	Object *visit_statement(string *out, Context *context);
-	Object *visit_object(Context *context);
+	Object *visit_object(string *out, Context *context);
 	Message visit_message();
 	Object *visit_send(string *out, Context *context);
 	Object *visit_store(Context *context);

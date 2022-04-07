@@ -35,7 +35,15 @@ Object *ASTNode::visit_statement(string *out, Context *context) {
 			}
 			return obj;
 		}
-		case TokObject: return visit_object(context);
+		case TokObject: {
+			string sout;
+			auto obj = visit_object(&sout, context);
+			if (sout != "") {
+				*out = sout;
+				return nullptr;
+			}
+			return obj;
+		}
 		case TokSend: {
 			string sout;
 			auto obj = visit_send(&sout, context);
@@ -50,10 +58,21 @@ Object *ASTNode::visit_statement(string *out, Context *context) {
 	}
 }
 
-Object *ASTNode::visit_object(Context *context) {
+Object *ASTNode::visit_object(string *out, Context *context) {
 	auto store = context->get(token.value);
 	if (store->get_store_type() == Store::Type::Object)
 		return store->get_obj();
+	else if (store->get_store_type() == Store::Type::Executable) {
+		string sout;
+		auto obj = store->get_exe()->visit_statement(&sout, context);
+		if (sout != "") {
+			*out = sout;
+			context->add(new Store(new string(sout)), token.value);
+			return nullptr;
+		}
+		context->add(new Store(obj), token.value);
+		return obj;
+	}
 	return nullptr; // FIXME: error
 }
 
@@ -65,7 +84,7 @@ Message ASTNode::visit_message() {
 }
 
 Object *ASTNode::visit_send(string *out, Context *context) {
-	auto obj = children[0]->token.type == TokSend ? children[0]->visit_send(out, context) : children[0]->visit_object(context);
+	auto obj = children[0]->token.type == TokSend ? children[0]->visit_send(out, context) : children[0]->visit_object(nullptr, context);
 
 	auto msg = children[1]->visit_message();
 	auto msg_obj = obj->send(msg, out);
@@ -79,10 +98,10 @@ Object *ASTNode::visit_send(string *out, Context *context) {
 }
 
 Object *ASTNode::visit_store(Context *context) {
-	auto obj = children[0]->visit_object(context);
+	auto obj = children[0]->visit_object(nullptr, context);
 
 	string sout;
-	auto rhs = children[2]->token.type == TokSend ? children[2]->visit_send(&sout, obj->get_context()) : children[2]->visit_object(obj->get_context());
+	auto rhs = children[2]->token.type == TokSend ? children[2]->visit_send(&sout, obj->get_context()) : children[2]->visit_object(nullptr, obj->get_context());
 
 	if (sout != "")
 		obj->get_stores()[children[1]->token.value] = new Store(new string(sout));

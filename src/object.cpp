@@ -173,12 +173,15 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		// execute body
 		string sout;
 		auto obj_out = obj->get_stores()["body"]->get_exe()->visit_statement(&sout, context);
-		if (sout != "")
-			*out = sout;
 
 		// restore context
 		delete context;
 		context = stored_context;
+
+		if (sout != "") {
+			*out = sout;
+			return nullptr;
+		}
 
 		return new Store(obj_out);
 	} else if (lit == "::pass_param") {

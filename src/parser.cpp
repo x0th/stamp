@@ -190,11 +190,12 @@ ASTNode *parse_statement_tail(ASTNode *object) {
 			rhs->get_children()[1]->get_children().push_back(object);
 			return rhs;
 		}
+		case TokSListEnd:
+			return object;
 		case TokStatementEnd:
 		case TokEOF:
 		case TokComa:
 		case TokCloseParend:
-		case TokSListEnd:
 			next_token();
 			return object;
 		default:
