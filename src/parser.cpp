@@ -265,6 +265,18 @@ ASTNode *parse_parameters(ASTNode *s) {
 				further = new ASTNode(Token { type: TokSend, value: "" }, children);
 			}
 			return parse_parameters(further);
+		case TokSListBegin: {
+			st = parse_program();
+			if (st) {
+				vector<ASTNode *> children;
+				children.push_back(s);
+				ASTNode *message = new ASTNode(Token { type: TokMessage, value: "pass_param" });
+				message->get_children().push_back(st);
+				children.push_back(message);
+				further = new ASTNode(Token { type: TokSend, value: "" }, children);	
+			}
+			return parse_parameters(further);
+		}
 		default:
 			throw error_msg("Expected Object, value, ) or ,. Found: " + token_readable(&tok) + ".");
 	}
