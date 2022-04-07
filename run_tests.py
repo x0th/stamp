@@ -11,6 +11,7 @@ blue = '\033[94m'
 green = '\033[92m'
 red = '\033[91m'
 endc = '\033[0m'
+autobake = True
 
 def make_debug():
 	subprocess.run(['make', 'clean'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -77,17 +78,28 @@ def test(tests):
 	debug_list = list(filter(lambda f: f.startswith('tests/dbg'), tests))
 	release_list = list(filter(lambda f: not f.startswith('tests/dbg'), tests))
 	failed_tests = []
+	error_log = []
 	
 	if len(debug_list) != 0:
 		bar = Bar('Running debug tests.  ', max=len(debug_list))
 		make_debug()
 		for i in range(len(debug_list)):
 			test_out = produce_test_out(debug_list[i])
-			with open(debug_list[i].split('.')[0]+'.out', 'r') as fhandle:
-				expected = fhandle.read()
 
-			if test_out != expected:
-				failed_tests.append((debug_list[i], expected, test_out))
+			bake_file = debug_list[i].split('.')[0]+'.out'
+
+			if (not os.path.exists(bake_file)):
+				if autobake:
+					with open(bake_file, 'w') as fhandle:
+						fhandle.write(test_out)
+				else:
+					error_log.append(blue + debug_list[i] + endc + ': No .out file found for test. Bake the test or rerun without -a to autobake.')
+			else:
+				with open(bake_file, 'r') as fhandle:
+					expected = fhandle.read()
+
+				if test_out != expected:
+					failed_tests.append((debug_list[i], expected, test_out))
 
 			bar.next();
 	
@@ -98,17 +110,29 @@ def test(tests):
 		make_release()
 		for i in range(len(release_list)):
 			test_out = produce_test_out(release_list[i])
-			with open(release_list[i].split('.')[0]+'.out', 'r') as fhandle:
-				expected = fhandle.read()
 
-			if test_out != expected:
-				failed_tests.append((release_list[i], expected, test_out))
+			bake_file = release_list[i].split('.')[0]+'.out'
+
+			if (not os.path.exists(bake_file)):
+				if autobake:
+					with open(bake_file, 'w') as fhandle:
+						fhandle.write(test_out)
+				else:
+					error_log.append(blue + release_list[i] + endc + ': No .out file found for test. Bake the test or rerun without -a to autobake.')
+			else:
+				with open(bake_file, 'r') as fhandle:
+					expected = fhandle.read()
+
+				if test_out != expected:
+					failed_tests.append((release_list[i], expected, test_out))
 
 			bar.next();
 
 		bar.finish()
 
 	print()
+	for e in error_log:
+		print(e)
 	for filename, expected, got in failed_tests:
 		print(blue + filename + ':' + endc)
 		print(green + 'EXPECTED:\n' + endc + expected)
@@ -134,8 +158,11 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser(description='The Stamp language interpreter.')
 	parser.add_argument('-b', dest='bake_list', nargs='*', help='Store new test results.')
 	parser.add_argument('-f', dest='tests', nargs='*', help='Run specified test files.')
+	parser.add_argument('-a', dest='autobake', default=True, action='store_false', help='Autobake tests that do not have .out files.')
 
 	args = parser.parse_args()
+
+	autobake = args.autobake
 
 	if args.bake_list is not None:
 		if len(args.bake_list) == 0:
