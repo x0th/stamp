@@ -5,18 +5,18 @@
 
 using namespace std;
 
-class Object;
+class Store;
 
 void initialize_global_context();
 
 class Context {
 public:
 	Context() {}
-	void add(Object *obj, string name);
-	Object *get(string obj);
+	void add(Store *store, string name);
+	Store *get(string name);
 	void dump();
 private:
-	map<string, Object *> context;
+	map<string, Store*> context;
 };
 
 extern Context *global_context;

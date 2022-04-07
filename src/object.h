@@ -70,7 +70,7 @@ public:
 
 	string to_string();
 	
-	Object *send(Message &message, string *out);
+	Store *send(Message &message, string *out);
 	void store_obj(string store_name, Object *obj);
 	void store_lit(string store_name, string *lit);
 	void store_exe(string store_name, ASTNode *exe);
@@ -84,6 +84,6 @@ private:
 	map<string, Store *> stores;
 	Context *context;
 
-	Object *handle_default(string &lit, ASTNode *sender, string *out, Object *reqester);
+	Store *handle_default(string &lit, ASTNode *sender, string *out, Object *reqester);
 	Object *clone_callable(ASTNode *sender);
 };

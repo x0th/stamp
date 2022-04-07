@@ -51,7 +51,10 @@ Object *ASTNode::visit_statement(string *out, Context *context) {
 }
 
 Object *ASTNode::visit_object(Context *context) {
-	return context->get(token.value);
+	auto store = context->get(token.value);
+	if (store->get_store_type() == Store::Type::Object)
+		return store->get_obj();
+	return nullptr; // FIXME: error
 }
 
 Message ASTNode::visit_message() {
@@ -72,7 +75,7 @@ Object *ASTNode::visit_send(string *out, Context *context) {
 
 	if (*out != "")
 		return nullptr;
-	return msg_obj;
+	return msg_obj->get_obj();
 }
 
 Object *ASTNode::visit_store(Context *context) {

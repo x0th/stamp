@@ -15,16 +15,16 @@ using namespace std;
 
 Context *global_context;
 
-void Context::add(Object *obj, string name) {
-	context[name] = obj;
+void Context::add(Store *store, string name) {
+	context[name] = store;
 }
 
-Object *Context::get(string obj) {
-	if (context.count(obj))
-		return context.at(obj);
+Store *Context::get(string name) {
+	if (context.count(name))
+		return context.at(name);
 	
 	if (this != global_context)
-		return global_context->get(obj);
+		return global_context->get(name);
 
 	return nullptr;
 }
@@ -32,7 +32,12 @@ Object *Context::get(string obj) {
 void Context::dump() {
 	cout << "----------------------\nContext:\n";
 	for (auto &c : context) {
-		cout << c.first << " = " << c.second->to_string() << "\n";
+		cout << c.first << " = ";
+		switch(c.second->get_store_type()) {
+			case Store::Type::Object: cout << c.second->get_obj()->to_string() << "\n"; break;
+			case Store::Type::Executable: cout << "Code\n"; break;
+			default: cout << "\n"; continue; // FIXME: print other types
+		}
 	}
 	cout << "----------------------\n";
 }
@@ -80,13 +85,13 @@ void initialize_global_context() {
 	callable->store_lit("pass_param", new string("::pass_param"));
 	callable->store_lit("call", new string("::call"));
 	callable->store_lit("store_body", new string("::store_body"));
-	callable->get_context()->add(param_names_list, "param_names_list");
-	callable->get_context()->add(param_binds_list, "param_binds_list");
+	callable->get_context()->add(new Store(param_names_list), "param_names_list");
+	callable->get_context()->add(new Store(param_binds_list), "param_binds_list");
 
 	// add to global context
-	global_context->add(object, "Object");
-	global_context->add(tr, "true");
-	global_context->add(fs, "false");
-	global_context->add(list, "List");
-	global_context->add(callable, "Callable");
+	global_context->add(new Store(object), "Object");
+	global_context->add(new Store(tr), "true");
+	global_context->add(new Store(fs), "false");
+	global_context->add(new Store(list), "List");
+	global_context->add(new Store(callable), "Callable");
 }
