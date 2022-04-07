@@ -4,7 +4,7 @@ import subprocess
 import sys
 import os
 import re
-from tqdm import tqdm
+from progress.bar import Bar
 
 obj_regex = re.compile('([A-Z][A-Za-z_]*-)([a-z0-9]+)')
 blue = '\033[94m'
@@ -50,18 +50,26 @@ def bake(bake_list):
 	release_list = list(filter(lambda f: not f.startswith('tests/dbg'), bake_list))
 	
 	if len(debug_list) != 0:
-		print('Baking debug tests.')
+		bar = Bar('Baking debug tests.  ', max=len(debug_list))
 		make_debug()
-		for i in tqdm(range(len(debug_list))):
+		for i in range(len(debug_list)):
 			with open(debug_list[i].split('.')[0]+'.out', 'w') as fhandle:
 				fhandle.write(produce_test_out(debug_list[i]))
+			
+			bar.next()
+
+		bar.finish()
 
 	if len(release_list) != 0:
-		print('Baking release tests.')
+		bar = Bar('Baking release tests.', max=len(release_list))
 		make_release()
-		for i in tqdm(range(len(release_list))):
+		for i in range(len(release_list)):
 			with open(release_list[i].split('.')[0]+'.out', 'w') as fhandle:
 				fhandle.write(produce_test_out(release_list[i]))
+
+			bar.next()
+
+		bar.finish()
 
 	print('Done baking tests.')
 
@@ -71,9 +79,9 @@ def test(tests):
 	failed_tests = []
 	
 	if len(debug_list) != 0:
-		print('Running debug tests.')
+		bar = Bar('Running debug tests.  ', max=len(debug_list))
 		make_debug()
-		for i in tqdm(range(len(debug_list))):
+		for i in range(len(debug_list)):
 			test_out = produce_test_out(debug_list[i])
 			with open(debug_list[i].split('.')[0]+'.out', 'r') as fhandle:
 				expected = fhandle.read()
@@ -81,16 +89,24 @@ def test(tests):
 			if test_out != expected:
 				failed_tests.append((debug_list[i], expected, test_out))
 
+			bar.next();
+	
+		bar.finish()
+
 	if len(release_list) != 0:
-		print('Running release tests.')
+		bar = Bar('Running release tests.', max=len(release_list))
 		make_release()
-		for i in tqdm(range(len(release_list))):
+		for i in range(len(release_list)):
 			test_out = produce_test_out(release_list[i])
 			with open(release_list[i].split('.')[0]+'.out', 'r') as fhandle:
 				expected = fhandle.read()
 
 			if test_out != expected:
 				failed_tests.append((release_list[i], expected, test_out))
+
+			bar.next();
+
+		bar.finish()
 
 	print()
 	for filename, expected, got in failed_tests:
