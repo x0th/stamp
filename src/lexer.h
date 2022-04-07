@@ -12,4 +12,4 @@
 
 static const int MAX_TOKEN_LEN = 128;
 
-Token scan(std::string &raw_string, int *position);
+Token scan(std::string &raw_string, long unsigned int *position);

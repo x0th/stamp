@@ -17,11 +17,11 @@ using namespace std;
 
 char token_image[MAX_TOKEN_LEN];
 
-char scan_char(string &raw_string, int *position) {
+char scan_char(string &raw_string, long unsigned int *position) {
 	return raw_string[++(*position)];
 }
 
-Token scan(string &raw_string, int *position) {
+Token scan(string &raw_string, long unsigned int *position) {
 	int c = raw_string[*position];
 	int i = 0;
 

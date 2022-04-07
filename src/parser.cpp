@@ -15,7 +15,7 @@ vector<string> file;
 string filename;
 long unsigned int line_number;
 string raw_str;
-int position;
+long unsigned int position;
 Token tok;
 
 ASTNode *parse_program();
@@ -37,7 +37,7 @@ string error_msg(string error) {
 	if (filename != "") {
 		out += filename + ":" + std::to_string(line_number+1) + ":"; 
 	} else {
-		for (int i = 0; i < position+1; i++)
+		for (long unsigned int i = 0; i < position+1; i++)
 			out += " ";
 		out += "^\n";
 	}
@@ -48,7 +48,10 @@ string error_msg(string error) {
 }
 
 inline void next_token() {
-	tok = scan(raw_str, &position);
+	if (raw_str.size() > position)
+		tok = scan(raw_str, &position);
+	else
+		tok = Token({ type: TokEOF, value: "" });
 }
 
 inline void match(TokenType expected) {
@@ -60,7 +63,7 @@ inline void match(TokenType expected) {
 }
 
 bool request_line() {
-	if (line_number + 1 == file.size())
+	if (line_number + 1 >= file.size())
 		return false;
 	
 	raw_str = file[++line_number];
@@ -105,6 +108,13 @@ void parse_statement_list(ASTNode *s) {
 		case TokEOF:
 			if (request_line())
 				parse_statement_list(s);
+			return;
+		case TokSListBegin:
+			st = parse_program();
+			if (st) {
+				s->get_children().push_back(st);
+			}
+			parse_statement_list(s);
 			return;
 		case TokSListEnd:
 			next_token();
@@ -368,6 +378,9 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 		case TokSListEnd:
 		case TokCloseParend:
 			return previous_message;
+		case TokSListBegin:
+			previous_message->get_children()[1]->get_children().push_back(parse_program());
+			return previous_message;
 		default:
 			throw error_msg("Expected Object, message, value, message, (, ), ;, }, EOF or ,. Found: " + token_readable(&tok) + ".");
 	};
@@ -378,7 +391,8 @@ ASTNode *parse(string &fname, vector<string> &f) {
 	filename = fname;
 	line_number = 0;
 
-	raw_str = f[0];
+	if (f.size() != 0)
+		raw_str = f[0];
 	position = 0;
 
 	return parse_program();

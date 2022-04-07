@@ -25,6 +25,11 @@ Object *ASTNode::visit_statement(string *out, Context *context) {
 		case TokSList: {
 			string sout;
 			Object *obj;
+			if (children.size() == 0) {
+				*out = " ";
+				return nullptr;
+			}
+
 			for (auto &c : children) {
 				sout = "";
 				obj = c->visit_statement(&sout, context);

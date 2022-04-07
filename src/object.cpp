@@ -196,9 +196,33 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 
 		stores["param_binds"]->get_obj()->send(msg, &sout);
 		return new Store(this);
+	} else if (lit == "::if_true") {
+		if (sender->get_children()[0]->visit_object(nullptr, context) == global_context->get("true")->get_obj()) {
+			string sout;
+			auto obj = sender->get_children()[1]->visit_statement(&sout, context);
+			if (sout != "") {
+				*out = sout;
+				return nullptr;
+			}
+			return  new Store(obj);
+		}
+		*out = " ";
+		return nullptr;
+	} else if (lit == "::if_false") {
+		if (sender->get_children()[0]->visit_object(nullptr, context) == global_context->get("false")->get_obj()) {
+			string sout;
+			auto obj = sender->get_children()[1]->visit_statement(&sout, context);
+			if (sout != "") {
+				*out = sout;
+				return nullptr;
+			}
+			return  new Store(obj);
+		}
+		*out = " ";
+		return nullptr;
 	}
 
-	return nullptr;
+	return nullptr; // FIXME: error
 }
 
 void Object::store_obj(string store_name, Object *obj) {

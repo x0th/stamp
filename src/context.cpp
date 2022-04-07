@@ -54,6 +54,9 @@ void initialize_global_context() {
 	object->store_lit("clone", new string("::clone"));
 	object->store_lit("==", new string("::=="));
 	object->store_lit("!=", new string("::!="));
+	// FIXME: maybe store these in a separate object?
+	object->store_lit("if_true", new string("::if_true"));
+	object->store_lit("if_false", new string("::if_false"));
 
 	// true, false
 	ASTNode tr_lit(Token { type: TokValue, value: "true" });
