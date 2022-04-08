@@ -197,26 +197,54 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		stores["param_binds"]->get_obj()->send(msg, &sout);
 		return new Store(this);
 	} else if (lit == "::if_true") {
-		if (sender->get_children()[0]->visit_object(nullptr, context) == global_context->get("true")->get_obj()) {
+		auto children = sender->get_children();
+		auto condition = children[0]->visit_object(nullptr, context);
+		if (condition == global_context->get("true")->get_obj()) {
 			string sout;
-			auto obj = sender->get_children()[1]->visit_statement(&sout, context);
+			auto obj = children[1]->visit_statement(&sout, context);
 			if (sout != "") {
 				*out = sout;
 				return nullptr;
 			}
 			return  new Store(obj);
+		} else if (condition == global_context->get("false")->get_obj()) {
+			if (children.size() == 3) {
+				string sout;
+				auto obj = children[2]->visit_statement(&sout, context);
+				if (sout != "") {
+					*out = sout;
+					return nullptr;
+				}
+				return new Store(obj);
+			}
+		} else {
+			// FIXME: error
 		}
 		*out = " ";
 		return nullptr;
 	} else if (lit == "::if_false") {
-		if (sender->get_children()[0]->visit_object(nullptr, context) == global_context->get("false")->get_obj()) {
+		auto children = sender->get_children();
+		auto condition = children[0]->visit_object(nullptr, context);
+		if (condition == global_context->get("false")->get_obj()) {
 			string sout;
-			auto obj = sender->get_children()[1]->visit_statement(&sout, context);
+			auto obj = children[1]->visit_statement(&sout, context);
 			if (sout != "") {
 				*out = sout;
 				return nullptr;
 			}
 			return  new Store(obj);
+		} else if (condition == global_context->get("true")->get_obj()) {
+			if (children.size() == 3) {
+				string sout;
+				auto obj = children[2]->visit_statement(&sout, context);
+				if (sout != "") {
+					*out = sout;
+					return nullptr;
+				}
+				return new Store(obj);
+			}
+		} else {
+			// FIXME: error
 		}
 		*out = " ";
 		return nullptr;
@@ -283,6 +311,8 @@ string Object::to_string() {
 		return "true";
 	else if (hash == global_context->get("false")->get_obj()->get_hash())
 		return "false";
+	else if (hash == global_context->get("if")->get_obj()->get_hash())
+		return "if";
 
 	stringstream s;
 	string out;

@@ -10,6 +10,7 @@
 #include "token.h"
 #include "context.h"
 #include "ast.h"
+#include "parser.h"
 
 using namespace std;
 
@@ -92,10 +93,18 @@ void initialize_global_context() {
 	callable->get_context()->add(new Store(param_names_list), "param_names_list");
 	callable->get_context()->add(new Store(param_binds_list), "param_binds_list");
 
+	// if
+	ASTNode if_lit(Token { type: TokValue, value: "if" });
+	auto i_f = object->clone(&if_lit);
+	i_f->store_lit("if_true", new string("::if_true"));
+	i_f->store_lit("if_false", new string("::if_false"));
+	i_f->get_stores()["if"] = new Store(i_f);
+
 	// add to global context
 	global_context->add(new Store(object), "Object");
 	global_context->add(new Store(tr), "true");
 	global_context->add(new Store(fs), "false");
-	global_context->add(new Store(list), "List");
 	global_context->add(new Store(callable), "Callable");
+	global_context->add(new Store(list), "List");
+	global_context->add(new Store(i_f), "if");
 }

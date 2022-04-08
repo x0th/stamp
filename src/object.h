@@ -75,9 +75,10 @@ public:
 	void store_lit(string store_name, string *lit);
 	void store_exe(string store_name, ASTNode *exe);
 	void store_list(string store_name, vector<Store *> *list);
+	
 	Object *clone(ASTNode *sender);
-
 	Object *clone_list(ASTNode *sender);
+	Object *clone_callable(ASTNode *sender);
 private:
 	int hash;
 	Object *prototype;
@@ -85,5 +86,4 @@ private:
 	Context *context;
 
 	Store *handle_default(string &lit, ASTNode *sender, string *out, Object *reqester);
-	Object *clone_callable(ASTNode *sender);
 };

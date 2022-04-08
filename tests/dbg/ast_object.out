@@ -5,6 +5,7 @@ Callable = Callable-hash
 List = List-hash
 Object = Object-hash
 false = false
+if = if
 true = true
 ----------------------
 TokSList()
@@ -16,6 +17,7 @@ Callable = Callable-hash
 List = List-hash
 Object = Object-hash
 false = false
+if = if
 true = true
 ----------------------
 STDERR:
