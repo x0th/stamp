@@ -165,9 +165,25 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 			get_msg.set_requester(nullptr);
 			param_names->send(get_msg, &obj_name);
 			get_msg.set_requester(nullptr);
-			auto msg_obj = param_binds->send(get_msg, nullptr);
 
-			context->add(msg_obj, obj_name);
+			auto msg_obj = param_binds->send(get_msg, nullptr);
+			switch (msg_obj->get_store_type()) {
+				case Store::Type::Object:
+				case Store::Type::Literal:
+					context->add(msg_obj, obj_name);
+					break;
+				case Store::Type::Executable: {
+					string sout;
+					auto obj_out = msg_obj->get_exe()->visit_statement(&sout, context);
+					if (sout != "") {
+						context->add(new Store(new string(sout)), obj_name);
+						break;
+					}
+					context->add(new Store(obj_out), obj_name);
+					break;
+				}
+				default: return nullptr; // FIXME: error
+			}
 		}
 
 		// execute body

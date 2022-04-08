@@ -65,18 +65,21 @@ Object *ASTNode::visit_statement(string *out, Context *context) {
 
 Object *ASTNode::visit_object(string *out, Context *context) {
 	auto store = context->get(token.value);
-	if (store->get_store_type() == Store::Type::Object)
-		return store->get_obj();
-	else if (store->get_store_type() == Store::Type::Executable) {
-		string sout;
-		auto obj = store->get_exe()->visit_statement(&sout, context);
-		if (sout != "") {
-			*out = sout;
-			context->add(new Store(new string(sout)), token.value);
-			return nullptr;
+	switch (store->get_store_type()) {
+		case Store::Type::Object: return store->get_obj();
+		case Store::Type::Literal: *out = *store->get_lit(); return nullptr;
+		case Store::Type::Executable: {
+			string sout;
+			auto obj = store->get_exe()->visit_statement(&sout, context);
+			if (sout != "") {
+				*out = sout;
+				context->add(new Store(new string(sout)), token.value);
+				return nullptr;
+			}
+			context->add(new Store(obj), token.value);
+			return obj;
 		}
-		context->add(new Store(obj), token.value);
-		return obj;
+		default: return nullptr; // FIXME error
 	}
 	return nullptr; // FIXME: error
 }
