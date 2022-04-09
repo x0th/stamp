@@ -95,7 +95,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		else
 			return global_context->get("false");
 	} else if (lit == "::get") {
-		auto use_stores = requester ? requester->get_stores()["internal"] : stores["internal"];
+		auto use_stores = requester ? requester->get_stores()["value"] : stores["value"];
 		auto element = (*use_stores->get_list())[stoi(sender->token.value)];
 		if (element->get_store_type() == Store::Type::Literal) {
 			*out = *element->get_lit();
@@ -103,7 +103,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		}
 		return element;
 	} else if (lit == "::push") {
-		auto use_stores = requester ? requester->get_stores()["internal"] : stores["internal"];
+		auto use_stores = requester ? requester->get_stores()["value"] : stores["value"];
 		switch (sender->token.type) {
 			case TokObject: use_stores->get_list()->push_back(new Store(context->get(sender->token.value)->get_obj())); break;
 			case TokSend:
@@ -115,7 +115,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 			return new Store(requester);
 		return new Store(this);
 	} else if (lit == "::size") {
-		auto use_stores = requester ? requester->get_stores()["internal"] : stores["internal"];
+		auto use_stores = requester ? requester->get_stores()["value"] : stores["value"];
 		*out = std::to_string(use_stores->get_list()->size());
 		return nullptr;
 	} else if (lit == "::store_param") {
@@ -316,7 +316,7 @@ Object *Object::clone_callable(ASTNode *sender) {
 Object *Object::clone_list(ASTNode *sender) {
 	Object * cloned = clone(sender);
 
-	cloned->store_list("internal", new vector<Store *>());
+	cloned->store_list("value", new vector<Store *>());
 	cloned->store_lit("clone", new string("::clone_list"));
 
 	return cloned;

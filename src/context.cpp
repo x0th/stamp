@@ -70,7 +70,7 @@ void initialize_global_context() {
 	// List
 	ASTNode list_lit(Token { type: TokValue, value: "List" });
 	auto list = object->clone(&list_lit);
-	list->store_list("internal", new vector<Store *>());
+	list->store_list("value", new vector<Store *>());
 	list->store_lit("get", new string("::get"));
 	list->store_lit("push", new string("::push"));
 	list->store_lit("clone", new string("::clone_list"));
