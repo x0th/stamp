@@ -1,0 +1,66 @@
+STDOUT:
+----------------------
+Context:
+Callable = Callable-hash
+List = List-hash
+Object = Object-hash
+false = false
+if = if
+true = true
+----------------------
+TokSList()
+  TokSend()
+    TokObject(Object)
+    TokMessage(clone)
+      TokObject(Dog)
+  TokStore()
+    TokObject(Dog)
+    TokValue(barks)
+    TokObject(true)
+  TokStore()
+    TokObject(Dog)
+    TokValue(meows)
+    TokObject(false)
+  TokSend()
+    TokObject(Object)
+    TokMessage(clone)
+      TokObject(Cat)
+  TokSend()
+    TokObject(if)
+    TokMessage(if_true)
+      TokSList()
+        TokSend()
+          TokObject(Dog)
+          TokMessage(barks)
+        TokSList()
+          TokSList()
+            TokSend()
+              TokObject(if)
+              TokMessage(if_true)
+                TokSList()
+                  TokSend()
+                    TokObject(Dog)
+                    TokMessage(meows)
+                  TokSList()
+                    TokSList()
+                      TokSend()
+                        TokObject(Cat)
+                        TokMessage(type)
+                  TokSList()
+                    TokSend()
+                      TokObject(Dog)
+                      TokMessage(type)
+        TokSList()
+Dog
+----------------------
+Context:
+Callable = Callable-hash
+Cat = Cat-hash
+Dog = Dog-hash
+List = List-hash
+Object = Object-hash
+false = false
+if = if
+true = true
+----------------------
+STDERR:

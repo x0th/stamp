@@ -214,7 +214,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		return new Store(this);
 	} else if (lit == "::if_true") {
 		auto children = sender->get_children();
-		auto condition = children[0]->visit_object(nullptr, context);
+		auto condition = children[0]->visit_statement(nullptr, context);
 		if (condition == global_context->get("true")->get_obj()) {
 			string sout;
 			auto obj = children[1]->visit_statement(&sout, context);
@@ -240,7 +240,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		return nullptr;
 	} else if (lit == "::if_false") {
 		auto children = sender->get_children();
-		auto condition = children[0]->visit_object(nullptr, context);
+		auto condition = children[0]->visit_statement(nullptr, context);
 		if (condition == global_context->get("false")->get_obj()) {
 			string sout;
 			auto obj = children[1]->visit_statement(&sout, context);

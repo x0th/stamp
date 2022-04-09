@@ -28,6 +28,8 @@ string token_str(Token *token) {
 		case TokCloseParend: s += "TokCloseParend"; break;
 		case TokComa: s += "TokComa"; break;
 		case TokFn: s += "TokFn"; break;
+		case TokIf: s += "TokIf"; break;
+		case TokElse: s += "TokElse"; break;
 	}
 	return s + "(" + token->value + ")";
 }
@@ -48,6 +50,8 @@ string token_readable(Token *token) {
 		case TokCloseParend: return ")";
 		case TokComa: return ",";
 		case TokFn: return "fn";
+		case TokIf: return "if";
+		case TokElse: return "else";
 	}
 	return "";
 }

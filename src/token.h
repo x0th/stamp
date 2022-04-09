@@ -23,6 +23,8 @@ enum TokenType {
 	TokCloseParend,
 	TokComa,
 	TokFn,
+	TokIf,
+	TokElse,
 };
 
 struct Token

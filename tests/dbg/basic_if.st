@@ -1,0 +1,3 @@
+if (true) {
+	Object.type
+}
