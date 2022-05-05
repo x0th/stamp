@@ -264,6 +264,17 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		}
 		*out = " ";
 		return nullptr;
+	} else if (lit == "::store_value") {
+		auto obj = requester ? requester : this;
+		switch (sender->token.type) {
+			case TokInt: {
+				requester->store_int("value", stoi(sender->token.value));
+			}
+			default: {
+				// FIXME: error
+			}
+		}
+		return new Store(obj);
 	}
 
 	return nullptr; // FIXME: error
@@ -337,6 +348,17 @@ string Object::to_string() {
 		return "false";
 	else if (hash == global_context->get("if")->get_obj()->get_hash())
 		return "if";
+	else if (stores["value"]) {
+		auto st = stores["value"];
+		switch (st->get_store_type()) {
+			case Store::Type::Int: {
+				return std::to_string(st->get_int());
+			}
+			default: {
+				// FIXME: Error
+			}
+		}
+	}
 
 	stringstream s;
 	string out;

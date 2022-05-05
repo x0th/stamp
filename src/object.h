@@ -57,6 +57,7 @@ public:
 	string *get_lit() const { return lit; }
 	Object *get_obj() const { return obj; }
 	ASTNode *get_exe() const { return exe; }
+	int get_int() const { return integer; }
 	vector<Store *> *get_list() const { return list; }
 	Type get_store_type() const { return store_type; }
 

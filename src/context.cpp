@@ -103,7 +103,7 @@ void initialize_global_context() {
 	// Int
 	ASTNode int_lit(Token { type: TokValue, value: "Int" });
 	auto Int = object->clone(&int_lit);
-	Int->store_int("value", 0);
+	Int->store_lit("store_value", new string("::store_value"));
 
 	// add to global context
 	global_context->add(new Store(object), "Object");
