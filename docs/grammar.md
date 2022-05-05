@@ -39,7 +39,7 @@ The closest approximation of the formal grammar of Stamp. Productions are outlin
                      
 **statement_rhs**&emsp;&emsp;&emsp;&emsp; &rarr; Object **message_tail**
 
-**if_statement**&emsp;&emsp;&emsp;&emsp;&emsp; &rarr; if ( Object **message_tail** ) { **statement_list** } **if_tail**
+**if_statement**&emsp;&emsp;&emsp;&emsp;&emsp; &rarr; if ( **statement_rhs** ) { **statement_list** } **if_tail**
 
 **if_tail**&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;&rarr; else **else_tail**<br>
 &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&rarr;

@@ -310,8 +310,10 @@ ASTNode *parse_statement_rhs() {
 			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokChar, value: tok.value }));
 			ASTNode *out_char = new ASTNode(Token { type: TokSend, value: "" }, value_children);
 			next_token();
-			return parse_statement_tail(out_char);
+			return parse_message_tail(out_char);
 		}
+		case TokCloseParend:
+			return nullptr;
 		default:
 			throw error_msg("Expected Object or value. Found: " + token_readable(&tok) + ".");
 	}
@@ -413,9 +415,7 @@ ASTNode *parse_if() {
 		case TokIf: {
 			match(TokOpenParend); // (
 			next_token(); // obj
-			auto object = new ASTNode(Token { type: TokObject, value: tok.value });
-			next_token(); // msg
-			auto full_param = parse_message_tail(object);
+			auto full_param = parse_statement_rhs();
 			auto true_branch = parse_program();
 			auto false_branch = parse_if_tail();
 
@@ -480,6 +480,36 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 		case TokObject:
 		case TokValue: {
 			previous_message->get_children()[1]->get_children().push_back(new ASTNode(tok));
+			next_token();
+			return previous_message;
+		}
+		case TokInt: {
+			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
+			vector<ASTNode *> int_children;
+			int_children.push_back(new ASTNode(Token { type: TokObject, value: "Int" }));
+			int_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
+			int_children[1]->get_children().push_back(object);
+			vector<ASTNode *> value_children;
+			value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, int_children));
+			value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));
+			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokInt, value: tok.value }));
+			ASTNode *out_int = new ASTNode(Token { type: TokSend, value: "" }, value_children);
+			previous_message->get_children()[1]->get_children().push_back(out_int);
+			next_token();
+			return previous_message;
+		}
+		case TokChar: {
+			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
+			vector<ASTNode *> char_children;
+			char_children.push_back(new ASTNode(Token { type: TokObject, value: "Char" }));
+			char_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
+			char_children[1]->get_children().push_back(object);
+			vector<ASTNode *> value_children;
+			value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, char_children));
+			value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));
+			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokChar, value: tok.value }));
+			ASTNode *out_char = new ASTNode(Token { type: TokSend, value: "" }, value_children);
+			previous_message->get_children()[1]->get_children().push_back(out_char);
 			next_token();
 			return previous_message;
 		}
