@@ -1,0 +1,3 @@
+STDOUT:
+STDERR:
+tests/rel/failed_char.st:1:15: Char should be of length 1.

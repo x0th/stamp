@@ -31,17 +31,20 @@ string token_str(Token *token) {
 		case TokIf: s += "TokIf"; break;
 		case TokElse: s += "TokElse"; break;
 		case TokInt: s += "TokInt"; break;
+		case TokChar: s += "TokChar"; break;
 	}
 	return s + "(" + token->value + ")";
 }
 
 string token_readable(Token *token) {
 	switch (token->type) {
-		case TokObject: return token->value;
-		case TokMessage: return token->value;
+		case TokObject:
+		case TokMessage:
+		case TokInt:
+		case TokChar:
+		case TokValue: return token->value;
 		case TokSend: return "Send";
 		case TokStore: return "=";
-		case TokValue: return token->value;
 		case TokEOF: return "EOF";
 		case TokStatementEnd: return ";";
 		case TokSList: return "Statement List";
@@ -53,7 +56,6 @@ string token_readable(Token *token) {
 		case TokFn: return "fn";
 		case TokIf: return "if";
 		case TokElse: return "else";
-		case TokInt: return token->value;
 	}
 	return "";
 }

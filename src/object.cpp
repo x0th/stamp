@@ -269,6 +269,11 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		switch (sender->token.type) {
 			case TokInt: {
 				requester->store_int("value", stoi(sender->token.value));
+				break;
+			}
+			case TokChar: {
+				requester->store_char("value", sender->token.value[0]);
+				break;
 			}
 			default: {
 				// FIXME: error
@@ -353,6 +358,9 @@ string Object::to_string() {
 		switch (st->get_store_type()) {
 			case Store::Type::Int: {
 				return std::to_string(st->get_int());
+			}
+			case Store::Type::Char: {
+				return string{st->get_char()};
 			}
 			default: {
 				// FIXME: Error

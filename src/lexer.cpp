@@ -54,6 +54,16 @@ Token scan(string &raw_string, long unsigned int *position) {
 
 			return Token({ type: TokStore, value: "" });
 		}
+		case '\'': {
+			// FIXME: want to have escape characters
+			char ch = scan_char(raw_string, position);
+			auto tok = Token({ type: TokChar, value: string{ch} });
+			c = scan_char(raw_string, position);
+			scan_char(raw_string, position);
+			if (c != '\'')
+				throw error_msg("Char should be of length 1.");
+			return tok;
+		}
 		default: {
 			if (isdigit(c)) {
 				do {

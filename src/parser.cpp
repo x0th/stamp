@@ -101,6 +101,7 @@ void parse_statement_list(ASTNode *s) {
 		case TokFn:
 		case TokIf:
 		case TokInt:
+		case TokChar:
 		{
 			st = parse_statement();
 			if (st) {
@@ -154,6 +155,20 @@ ASTNode *parse_statement() {
 			ASTNode *out_int = new ASTNode(Token { type: TokSend, value: "" }, value_children);
 			next_token();
 			return parse_statement_tail(out_int);
+		}
+		case TokChar: {
+			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
+			vector<ASTNode *> char_children;
+			char_children.push_back(new ASTNode(Token { type: TokObject, value: "Char" }));
+			char_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
+			char_children[1]->get_children().push_back(object);
+			vector<ASTNode *> value_children;
+			value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, char_children));
+			value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));
+			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokChar, value: tok.value }));
+			ASTNode *out_char = new ASTNode(Token { type: TokSend, value: "" }, value_children);
+			next_token();
+			return parse_statement_tail(out_char);
 		}
 		case TokFn: {
 			next_token(); // fn
@@ -245,6 +260,7 @@ ASTNode *parse_rhs(ASTNode *object) {
 		case TokInt:
 		case TokObject:
 		case TokValue:
+		case TokChar:
 			return parse_statement_rhs();
 		case TokEOF: {
 			if (request_line())
@@ -281,6 +297,20 @@ ASTNode *parse_statement_rhs() {
 			ASTNode *out_int = new ASTNode(Token { type: TokSend, value: "" }, value_children);
 			next_token();
 			return parse_message_tail(out_int);
+		}
+		case TokChar: {
+			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
+			vector<ASTNode *> char_children;
+			char_children.push_back(new ASTNode(Token { type: TokObject, value: "Char" }));
+			char_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
+			char_children[1]->get_children().push_back(object);
+			vector<ASTNode *> value_children;
+			value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, char_children));
+			value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));
+			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokChar, value: tok.value }));
+			ASTNode *out_char = new ASTNode(Token { type: TokSend, value: "" }, value_children);
+			next_token();
+			return parse_statement_tail(out_char);
 		}
 		default:
 			throw error_msg("Expected Object or value. Found: " + token_readable(&tok) + ".");

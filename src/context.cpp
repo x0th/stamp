@@ -105,6 +105,11 @@ void initialize_global_context() {
 	auto Int = object->clone(&int_lit);
 	Int->store_lit("store_value", new string("::store_value"));
 
+	// Char
+	ASTNode char_lit(Token { type: TokValue, value: "Char" });
+	auto Char = object->clone(&char_lit);
+	Char->store_lit("store_value", new string("::store_value"));
+
 	// add to global context
 	global_context->add(new Store(object), "Object");
 	global_context->add(new Store(tr), "true");
@@ -113,4 +118,5 @@ void initialize_global_context() {
 	global_context->add(new Store(list), "List");
 	global_context->add(new Store(i_f), "if");
 	global_context->add(new Store(Int), "Int");
+	global_context->add(new Store(Char), "Char");
 }

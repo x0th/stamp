@@ -2,6 +2,7 @@ STDOUT:
 ----------------------
 Context:
 Callable = Callable-hash
+Char = Char-hash
 Int = Int-hash
 List = List-hash
 Object = Object-hash
@@ -20,6 +21,7 @@ Object-hash
 ----------------------
 Context:
 Callable = Callable-hash
+Char = Char-hash
 Int = Int-hash
 List = List-hash
 Object = Object-hash
