@@ -34,17 +34,21 @@ ASTNode *parse_if();
 ASTNode *parse_if_tail();
 ASTNode *parse_else_tail();
 
-#define create_basic_obj(token_name, obj_name)                                                                  \
-	auto object = new ASTNode(Token { type: TokValue, value: tok.value });                                      \
+#define clone_obj(obj_name)                                                                                     \
 	vector<ASTNode *> children;                                                                                 \
 	children.push_back(new ASTNode(Token { type: TokObject, value: obj_name }));                                \
 	children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));                                \
 	children[1]->get_children().push_back(object);                                                              \
+	auto cloned = new ASTNode(Token { type: TokSend, value: "" }, children);                                    \
+
+#define create_basic_obj(token_name, obj_name) \
+	auto object = new ASTNode(Token { type: TokValue, value: tok.value });                                      \
+	clone_obj(obj_name)                                                                                         \
 	vector<ASTNode *> value_children;                                                                           \
-	value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, children));                        \
+	value_children.push_back(cloned);                                                                           \
 	value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));                    \
 	value_children[1]->get_children().push_back(new ASTNode(Token { type: token_name, value: tok.value }));     \
-	ASTNode *out = new ASTNode(Token { type: TokSend, value: "" }, value_children);                         \
+	ASTNode *out = new ASTNode(Token { type: TokSend, value: "" }, value_children);                             \
 
 string error_msg(string error) {
 	string out;
@@ -171,14 +175,10 @@ ASTNode *parse_statement() {
 		}
 		case TokFn: {
 			next_token(); // fn
-			auto fn_name = new ASTNode(Token { type: TokValue, value: tok.value });
-			vector<ASTNode *> callable_children;
-			callable_children.push_back(new ASTNode(Token { type: TokObject, value: "Callable" }));
-			callable_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
-			callable_children[1]->get_children().push_back(fn_name);
-			ASTNode *clone_callable = new ASTNode(Token { type: TokSend, value: "" }, callable_children);
+			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
+			clone_obj("Callable");
 			next_token(); // fn_name
-			return parse_function_tail(clone_callable);
+			return parse_function_tail(cloned);
 		}
 		case TokIf: {
 			return parse_if();
@@ -249,12 +249,8 @@ ASTNode *parse_rhs(ASTNode *object) {
 	switch(tok.type) {
 		case TokFn: {
 			next_token(); // fn
-			vector<ASTNode *> callable_children;
-			callable_children.push_back(new ASTNode(Token { type: TokObject, value: "Callable" }));
-			callable_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
-			callable_children[1]->get_children().push_back(object);
-			ASTNode *clone_callable = new ASTNode(Token { type: TokSend, value: "" }, callable_children);
-			return parse_function_tail(clone_callable);
+			clone_obj("Callable");
+			return parse_function_tail(cloned);
 		}
 		case TokInt:
 		case TokObject:
