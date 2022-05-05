@@ -95,16 +95,17 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 	} else if (lit == "::get") {
 		auto use_stores = requester ? requester->get_stores()["value"] : stores["value"];
 		auto element = (*use_stores->get_list())[stoi(sender->token.value)];
-		if (element->get_store_type() == Store::Type::Literal) {
-			*out = *element->get_lit();
-			return nullptr;
-		}
 		return element;
 	} else if (lit == "::push") {
 		auto use_stores = requester ? requester->get_stores()["value"] : stores["value"];
 		switch (sender->token.type) {
 			case TokObject: use_stores->get_list()->push_back(new Store(context->get(sender->token.value)->get_obj())); break;
-			case TokSend:
+			case TokSend: {
+				string sout;
+				auto obj = sender->visit_send(&sout, requester ? requester->context : context);
+				use_stores->get_list()->push_back(sout == "" ? new Store(obj) : new Store(new string(sout)));
+				break;
+			}
 			case TokSList: use_stores->get_list()->push_back(new Store(sender)); break;
 			case TokValue: use_stores->get_list()->push_back(new Store(new string(sender->token.value))); break;
 			default: exit(1); // FIXME: error
@@ -159,9 +160,8 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 
 		for (int i = 0; i < size; i++) {
 			get_sender->token.value = std::to_string(i);
-			string obj_name;
 			get_msg.set_requester(nullptr);
-			param_names->send(get_msg, &obj_name);
+			auto obj_name = *param_names->send(get_msg, nullptr)->get_lit();
 			get_msg.set_requester(nullptr);
 
 			auto msg_obj = param_binds->send(get_msg, nullptr);
@@ -266,11 +266,11 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		auto obj = requester ? requester : this;
 		switch (sender->token.type) {
 			case TokInt: {
-				requester->store_int("value", stoi(sender->token.value));
+				obj->store_int("value", stoi(sender->token.value));
 				break;
 			}
 			case TokChar: {
-				requester->store_char("value", sender->token.value[0]);
+				obj->store_char("value", sender->token.value[0]);
 				break;
 			}
 			case TokString: {
@@ -278,7 +278,12 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 				for (auto s : sender->token.value) {
 					str->push_back(new Store(s));
 				}
-				requester->store_list("value", str);
+				obj->store_list("value", str);
+				break;
+			}
+			case TokList: {
+				obj->store_list("value", new vector<Store *>());
+				break;
 			}
 			default: {
 				// FIXME: error
@@ -371,6 +376,7 @@ string Object::to_string() {
 						case Store::Type::Object: s << e->get_obj()->to_string(); break;
 						case Store::Type::Int: s << std::to_string(e->get_int()); break;
 						case Store::Type::Char: s << e->get_char(); break;
+						case Store::Type::Literal: s << *e->get_lit(); break;
 						default: {
 							// FIXME: Error?
 						}

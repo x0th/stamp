@@ -1,0 +1,2 @@
+Object l = [];
+Object.l

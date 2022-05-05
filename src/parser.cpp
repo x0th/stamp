@@ -33,6 +33,7 @@ ASTNode *parse_statement_rhs();
 ASTNode *parse_if();
 ASTNode *parse_if_tail();
 ASTNode *parse_else_tail();
+ASTNode *parse_list(ASTNode *list);
 
 #define clone_obj(obj_name)                                                                                     \
 	vector<ASTNode *> children;                                                                                 \
@@ -41,7 +42,7 @@ ASTNode *parse_else_tail();
 	children[1]->get_children().push_back(object);                                                              \
 	auto cloned = new ASTNode(Token { type: TokSend, value: "" }, children);                                    \
 
-#define create_basic_obj(token_name, obj_name) \
+#define create_basic_obj(token_name, obj_name)                                                                  \
 	auto object = new ASTNode(Token { type: TokValue, value: tok.value });                                      \
 	clone_obj(obj_name)                                                                                         \
 	vector<ASTNode *> value_children;                                                                           \
@@ -119,6 +120,7 @@ void parse_statement_list(ASTNode *s) {
 		case TokInt:
 		case TokChar:
 		case TokString:
+		case TokSqBracketL:
 		{
 			st = parse_statement();
 			if (st) {
@@ -172,6 +174,11 @@ ASTNode *parse_statement() {
 			create_basic_obj(TokString, "String");
 			next_token();
 			return parse_statement_tail(out);
+		}
+		case TokSqBracketL: {
+			create_basic_obj(TokList, "List");
+			next_token(); // [
+			return parse_message_tail(parse_list(out));
 		}
 		case TokFn: {
 			next_token(); // fn
@@ -245,6 +252,35 @@ ASTNode *parse_statement_tail(ASTNode *object) {
 	};
 }
 
+ASTNode *parse_list(ASTNode *list) {
+	switch(tok.type) {
+		case TokSqBracketR: {
+			next_token(); return list;
+		}
+		case TokComa:
+			next_token(); return parse_list(list);
+		case TokObject:
+		case TokValue:
+		case TokInt:
+		case TokChar:
+		case TokString:
+		case TokSqBracketL: {
+			vector<ASTNode *> msg_children;
+			msg_children.push_back(list);
+			msg_children.push_back(new ASTNode(Token({ type: TokMessage, value: "push" })));
+			msg_children[1]->get_children().push_back(parse_statement_rhs());
+			return parse_list(new ASTNode(Token({ type: TokSend, value: "" }), msg_children));
+		}
+		case TokEOF: {
+			if (request_line())
+				return parse_list(list);
+			throw error_msg("Unexpected end of file.");
+		}
+		default:
+			throw error_msg("Object, value, [ or ]. Found: " + token_readable(&tok) + ".");
+	}
+}
+
 ASTNode *parse_rhs(ASTNode *object) {
 	switch(tok.type) {
 		case TokFn: {
@@ -257,6 +293,7 @@ ASTNode *parse_rhs(ASTNode *object) {
 		case TokValue:
 		case TokChar:
 		case TokString:
+		case TokSqBracketL:
 			return parse_statement_rhs();
 		case TokEOF: {
 			if (request_line())
@@ -294,6 +331,11 @@ ASTNode *parse_statement_rhs() {
 			create_basic_obj(TokString, "String");
 			next_token();
 			return parse_message_tail(out);
+		}
+		case TokSqBracketL: {
+			create_basic_obj(TokList, "List");
+			next_token(); // [
+			return parse_message_tail(parse_list(out));
 		}
 		case TokCloseParend:
 			return nullptr;
@@ -484,6 +526,12 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 			next_token();
 			return previous_message;
 		}
+		case TokSqBracketL: {
+			create_basic_obj(TokList, "List");
+			next_token(); // [
+			parse_list(out);
+			return parse_message_tail(out);
+		};
 		case TokMessage: {
 			vector<ASTNode *> children;
 			children.push_back(previous_message);
@@ -508,6 +556,7 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 		case TokComa:
 		case TokSListEnd:
 		case TokCloseParend:
+		case TokSqBracketR:
 			return previous_message;
 		case TokSListBegin:
 			previous_message->get_children()[1]->get_children().push_back(parse_program());

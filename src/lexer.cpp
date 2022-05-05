@@ -43,6 +43,8 @@ Token scan(string &raw_string, long unsigned int *position) {
 		case '(': next_char; return Token({ type: TokOpenParend, value: ""});
 		case ')': next_char; return Token({ type: TokCloseParend, value: ""});
 		case ',': next_char; return Token({ type: TokComa, value: ""});
+		case '[': next_char; return Token({ type: TokSqBracketL, value: ""});
+		case ']': next_char; return Token({ type: TokSqBracketR, value: ""});
 		case '^': next_char; return Token({ type: TokMessage, value: "clone"});
 		case '!': next_char; next_char; return Token({ type: TokMessage, value: "!="});
 		case '=': {

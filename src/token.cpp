@@ -34,6 +34,9 @@ string token_str(Token *token) {
 		tok_str(TokInt)
 		tok_str(TokChar)
 		tok_str(TokString)
+		tok_str(TokSqBracketL)
+		tok_str(TokSqBracketR)
+		tok_str(TokList)
 #undef tok_str
 	}
 	return s + "(" + token->value + ")";
@@ -46,6 +49,7 @@ string token_readable(Token *token) {
 		case TokInt:
 		case TokChar:
 		case TokString:
+		case TokList:
 		case TokValue: return token->value;
 		case TokSend: return "Send";
 		case TokStore: return "=";
@@ -60,6 +64,8 @@ string token_readable(Token *token) {
 		case TokFn: return "fn";
 		case TokIf: return "if";
 		case TokElse: return "else";
+		case TokSqBracketL: return "[";
+		case TokSqBracketR: return "]";
 	}
 	return "";
 }
