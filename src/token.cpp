@@ -32,6 +32,7 @@ string token_str(Token *token) {
 		case TokElse: s += "TokElse"; break;
 		case TokInt: s += "TokInt"; break;
 		case TokChar: s += "TokChar"; break;
+		case TokString: s += "TokString"; break;
 	}
 	return s + "(" + token->value + ")";
 }
@@ -42,6 +43,7 @@ string token_readable(Token *token) {
 		case TokMessage:
 		case TokInt:
 		case TokChar:
+		case TokString:
 		case TokValue: return token->value;
 		case TokSend: return "Send";
 		case TokStore: return "=";

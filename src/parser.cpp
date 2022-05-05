@@ -114,6 +114,7 @@ void parse_statement_list(ASTNode *s) {
 		case TokIf:
 		case TokInt:
 		case TokChar:
+		case TokString:
 		{
 			st = parse_statement();
 			if (st) {
@@ -160,6 +161,11 @@ ASTNode *parse_statement() {
 		}
 		case TokChar: {
 			create_basic_obj(TokChar, "Char");
+			next_token();
+			return parse_statement_tail(out);
+		}
+		case TokString: {
+			create_basic_obj(TokString, "String");
 			next_token();
 			return parse_statement_tail(out);
 		}
@@ -254,6 +260,7 @@ ASTNode *parse_rhs(ASTNode *object) {
 		case TokObject:
 		case TokValue:
 		case TokChar:
+		case TokString:
 			return parse_statement_rhs();
 		case TokEOF: {
 			if (request_line())
@@ -284,6 +291,11 @@ ASTNode *parse_statement_rhs() {
 		}
 		case TokChar: {
 			create_basic_obj(TokChar, "Char");
+			next_token();
+			return parse_message_tail(out);
+		}
+		case TokString: {
+			create_basic_obj(TokString, "String");
 			next_token();
 			return parse_message_tail(out);
 		}
@@ -466,6 +478,12 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 		}
 		case TokChar: {
 			create_basic_obj(TokChar, "Char");
+			previous_message->get_children()[1]->get_children().push_back(out);
+			next_token();
+			return previous_message;
+		}
+		case TokString: {
+			create_basic_obj(TokString, "String");
 			previous_message->get_children()[1]->get_children().push_back(out);
 			next_token();
 			return previous_message;

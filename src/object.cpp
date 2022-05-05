@@ -273,6 +273,13 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 				requester->store_char("value", sender->token.value[0]);
 				break;
 			}
+			case TokString: {
+				auto str = new vector<Store *>();
+				for (auto s : sender->token.value) {
+					str->push_back(new Store(s));
+				}
+				requester->store_list("value", str);
+			}
 			default: {
 				// FIXME: error
 			}
@@ -356,17 +363,20 @@ string Object::to_string() {
 			case Store::Type::List: {
 				stringstream s;
 				s << "[";
-				for (auto e : *st->get_list()) {
+				auto lst = *st->get_list();
+				for (long unsigned int i = 0; i < lst.size(); i++) {
+					auto e = lst[i];
 					// FIXME: Ideally, this should be checked by querying the type of the list from the object
 					switch (e->get_store_type()) {
 						case Store::Type::Object: s << e->get_obj()->to_string(); break;
 						case Store::Type::Int: s << std::to_string(e->get_int()); break;
-						case Store::Type::Char: s << std::to_string(e->get_char()); break;
+						case Store::Type::Char: s << e->get_char(); break;
 						default: {
 							// FIXME: Error?
 						}
 					}
-					s << ", ";
+					if (i != lst.size() - 1)
+						s << ", ";
 				}
 				s << "]";
 				return s.str();

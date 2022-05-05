@@ -93,6 +93,48 @@ Token scan(string &raw_string, long unsigned int *position) {
 				throw error_msg("Length of character is not valid.");
 			return tok;
 		}
+		case '\"': {
+			c = scan_char(raw_string, position);
+			do {
+				if (c == '\\') {
+					char esc = scan_char(raw_string, position);
+					switch (esc) {
+						case 'a': c = '\a'; break;
+						case 'b': c = '\b'; break;
+						case 'e': c = static_cast<char>(0x1b); break;
+						case 'f': c = '\f'; break;
+						case 'n': c = '\n'; break;
+						case 'r': c = '\r'; break;
+						case 't': c = '\t'; break;
+						case 'v': c = '\v'; break;
+						case '\\': c = '\\'; break;
+						case '\'': c = '\''; break;
+						case '\"': c = '\"'; break;
+						case '\?': c = '\?'; break;
+						case 'x': {
+							// FIXME: Only reads "proper" characters (of hex length 2), maybe should support lengths 1, 3 and beyond?
+							char num[] = {scan_char(raw_string, position), scan_char(raw_string, position)};
+							std::stringstream s;
+							int hex;
+							s << std::hex << num;
+							s >> hex;
+							c = static_cast<char>(hex);
+							break;
+						}
+							// FIXME: Unicode (\u) support?
+						default: c = esc; break;
+					}
+				}
+				token_image[i++] = c;
+				if (i >= MAX_TOKEN_LEN)
+					throw error_msg("Maximum token length exceeded.");
+				c = scan_char(raw_string, position);
+			} while (c != '\"');
+			token_image[i] = '\0';
+			scan_char(raw_string, position);
+
+			return Token({ type: TokString, value: token_image });
+		}
 		default: {
 			if (isdigit(c)) {
 				do {
