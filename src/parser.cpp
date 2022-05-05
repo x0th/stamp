@@ -34,6 +34,18 @@ ASTNode *parse_if();
 ASTNode *parse_if_tail();
 ASTNode *parse_else_tail();
 
+#define create_basic_obj(token_name, obj_name)                                                                  \
+	auto object = new ASTNode(Token { type: TokValue, value: tok.value });                                      \
+	vector<ASTNode *> children;                                                                                 \
+	children.push_back(new ASTNode(Token { type: TokObject, value: obj_name }));                                \
+	children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));                                \
+	children[1]->get_children().push_back(object);                                                              \
+	vector<ASTNode *> value_children;                                                                           \
+	value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, children));                        \
+	value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));                    \
+	value_children[1]->get_children().push_back(new ASTNode(Token { type: token_name, value: tok.value }));     \
+	ASTNode *out = new ASTNode(Token { type: TokSend, value: "" }, value_children);                         \
+
 string error_msg(string error) {
 	string out;
 	if (filename != "") {
@@ -129,7 +141,6 @@ void parse_statement_list(ASTNode *s) {
 	}
 }
 
-
 ASTNode *parse_statement() {
 	switch (tok.type) {
 		case TokObject: {
@@ -143,32 +154,14 @@ ASTNode *parse_statement() {
 			return parse_statement_tail(object);
 		}
 		case TokInt: {
-			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
-			vector<ASTNode *> int_children;
-			int_children.push_back(new ASTNode(Token { type: TokObject, value: "Int" }));
-			int_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
-			int_children[1]->get_children().push_back(object);
-			vector<ASTNode *> value_children;
-			value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, int_children));
-			value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));
-			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokInt, value: tok.value }));
-			ASTNode *out_int = new ASTNode(Token { type: TokSend, value: "" }, value_children);
+			create_basic_obj(TokInt, "Int");
 			next_token();
-			return parse_statement_tail(out_int);
+			return parse_statement_tail(out);
 		}
 		case TokChar: {
-			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
-			vector<ASTNode *> char_children;
-			char_children.push_back(new ASTNode(Token { type: TokObject, value: "Char" }));
-			char_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
-			char_children[1]->get_children().push_back(object);
-			vector<ASTNode *> value_children;
-			value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, char_children));
-			value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));
-			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokChar, value: tok.value }));
-			ASTNode *out_char = new ASTNode(Token { type: TokSend, value: "" }, value_children);
+			create_basic_obj(TokChar, "Char");
 			next_token();
-			return parse_statement_tail(out_char);
+			return parse_statement_tail(out);
 		}
 		case TokFn: {
 			next_token(); // fn
@@ -285,32 +278,14 @@ ASTNode *parse_statement_rhs() {
 			return parse_message_tail(object);
 		}
 		case TokInt: {
-			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
-			vector<ASTNode *> int_children;
-			int_children.push_back(new ASTNode(Token { type: TokObject, value: "Int" }));
-			int_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
-			int_children[1]->get_children().push_back(object);
-			vector<ASTNode *> value_children;
-			value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, int_children));
-			value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));
-			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokInt, value: tok.value }));
-			ASTNode *out_int = new ASTNode(Token { type: TokSend, value: "" }, value_children);
+			create_basic_obj(TokInt, "Int");
 			next_token();
-			return parse_message_tail(out_int);
+			return parse_message_tail(out);
 		}
 		case TokChar: {
-			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
-			vector<ASTNode *> char_children;
-			char_children.push_back(new ASTNode(Token { type: TokObject, value: "Char" }));
-			char_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
-			char_children[1]->get_children().push_back(object);
-			vector<ASTNode *> value_children;
-			value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, char_children));
-			value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));
-			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokChar, value: tok.value }));
-			ASTNode *out_char = new ASTNode(Token { type: TokSend, value: "" }, value_children);
+			create_basic_obj(TokChar, "Char");
 			next_token();
-			return parse_message_tail(out_char);
+			return parse_message_tail(out);
 		}
 		case TokCloseParend:
 			return nullptr;
@@ -484,32 +459,14 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 			return previous_message;
 		}
 		case TokInt: {
-			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
-			vector<ASTNode *> int_children;
-			int_children.push_back(new ASTNode(Token { type: TokObject, value: "Int" }));
-			int_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
-			int_children[1]->get_children().push_back(object);
-			vector<ASTNode *> value_children;
-			value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, int_children));
-			value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));
-			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokInt, value: tok.value }));
-			ASTNode *out_int = new ASTNode(Token { type: TokSend, value: "" }, value_children);
-			previous_message->get_children()[1]->get_children().push_back(out_int);
+			create_basic_obj(TokInt, "Int");
+			previous_message->get_children()[1]->get_children().push_back(out);
 			next_token();
 			return previous_message;
 		}
 		case TokChar: {
-			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
-			vector<ASTNode *> char_children;
-			char_children.push_back(new ASTNode(Token { type: TokObject, value: "Char" }));
-			char_children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));
-			char_children[1]->get_children().push_back(object);
-			vector<ASTNode *> value_children;
-			value_children.push_back(new ASTNode(Token { type: TokSend, value: "" }, char_children));
-			value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));
-			value_children[1]->get_children().push_back(new ASTNode(Token { type: TokChar, value: tok.value }));
-			ASTNode *out_char = new ASTNode(Token { type: TokSend, value: "" }, value_children);
-			previous_message->get_children()[1]->get_children().push_back(out_char);
+			create_basic_obj(TokChar, "Char");
+			previous_message->get_children()[1]->get_children().push_back(out);
 			next_token();
 			return previous_message;
 		}

@@ -1,2 +1,2 @@
-Object c = '\n'
+Object c = '\n';
 Object.c
