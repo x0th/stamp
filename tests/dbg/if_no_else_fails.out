@@ -2,6 +2,7 @@ STDOUT:
 ----------------------
 Context:
 Callable = Callable-hash
+Int = Int-hash
 List = List-hash
 Object = Object-hash
 false = false
@@ -24,6 +25,7 @@ TokSList()
 ----------------------
 Context:
 Callable = Callable-hash
+Int = Int-hash
 List = List-hash
 Object = Object-hash
 false = false

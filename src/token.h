@@ -25,6 +25,7 @@ enum TokenType {
 	TokFn,
 	TokIf,
 	TokElse,
+	TokInt,
 };
 
 struct Token

@@ -22,7 +22,7 @@ class Context;
 
 class Store {
 public:
-	enum class Type { Object, Literal, Executable, List };
+	enum class Type { Object, Literal, Executable, List, Int, Char };
 
 	Store(Object *_obj) {
 		store_type = Type::Object;
@@ -44,6 +44,16 @@ public:
 		list = _list;
 	}
 
+	Store(int i) {
+		store_type = Type::Int;
+		integer = i;
+	}
+
+    Store(char c) {
+        store_type = Type::Char;
+        character = c;
+    }
+
 	string *get_lit() const { return lit; }
 	Object *get_obj() const { return obj; }
 	ASTNode *get_exe() const { return exe; }
@@ -57,6 +67,8 @@ private:
 		string *lit;
 		ASTNode *exe;
 		vector<Store *> *list;
+		int integer;
+		char character;
 	};
 };
 
@@ -75,6 +87,8 @@ public:
 	void store_lit(string store_name, string *lit);
 	void store_exe(string store_name, ASTNode *exe);
 	void store_list(string store_name, vector<Store *> *list);
+	void store_int(string store_name, int integer);
+	void store_char(string store_name, char character);
 	
 	Object *clone(ASTNode *sender);
 	Object *clone_list(ASTNode *sender);

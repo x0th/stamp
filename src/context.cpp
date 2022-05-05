@@ -100,6 +100,11 @@ void initialize_global_context() {
 	i_f->store_lit("if_false", new string("::if_false"));
 	i_f->get_stores()["if"] = new Store(i_f);
 
+	// Int
+	ASTNode int_lit(Token { type: TokValue, value: "Int" });
+	auto Int = object->clone(&int_lit);
+	Int->store_int("value", 0);
+
 	// add to global context
 	global_context->add(new Store(object), "Object");
 	global_context->add(new Store(tr), "true");
@@ -107,4 +112,5 @@ void initialize_global_context() {
 	global_context->add(new Store(callable), "Callable");
 	global_context->add(new Store(list), "List");
 	global_context->add(new Store(i_f), "if");
+	global_context->add(new Store(Int), "Int");
 }

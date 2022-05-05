@@ -30,6 +30,7 @@ string token_str(Token *token) {
 		case TokFn: s += "TokFn"; break;
 		case TokIf: s += "TokIf"; break;
 		case TokElse: s += "TokElse"; break;
+		case TokInt: s += "TokInt"; break;
 	}
 	return s + "(" + token->value + ")";
 }
@@ -52,6 +53,7 @@ string token_readable(Token *token) {
 		case TokFn: return "fn";
 		case TokIf: return "if";
 		case TokElse: return "else";
+		case TokInt: return token->value;
 	}
 	return "";
 }

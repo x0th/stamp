@@ -2,6 +2,7 @@ STDOUT:
 ----------------------
 Context:
 Callable = Callable-hash
+Int = Int-hash
 List = List-hash
 Object = Object-hash
 false = false
@@ -64,6 +65,7 @@ Callable = Callable-hash
 Cat = Cat-hash
 Dog = Dog-hash
 Duck = Duck-hash
+Int = Int-hash
 List = List-hash
 Object = Object-hash
 false = false

@@ -13,17 +13,17 @@ TokSList()
   TokSend()
     TokObject(Object)
     TokMessage(clone)
-      TokObject(Cat)
-Cat-hash
+      TokObject(obj)
+Object-hash
 ----------------------
 Context:
 Callable = Callable-hash
-Cat = Cat-hash
 Int = Int-hash
 List = List-hash
 Object = Object-hash
 false = false
 if = if
+obj = Object-hash
 true = true
 ----------------------
 STDERR:

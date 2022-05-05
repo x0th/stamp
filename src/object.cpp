@@ -285,6 +285,14 @@ void Object::store_list(string store_name, vector<Store *> *list) {
 	stores[store_name] = new Store(list);
 }
 
+void Object::store_int(string store_name, int integer) {
+	stores[store_name] = new Store(integer);
+}
+
+void Object::store_char(string store_name, char character) {
+	stores[store_name] = new Store(character);
+}
+
 Object *Object::clone(ASTNode *sender) {
 	Object *cloned = new Object(this);
 	string new_type = sender ? sender->token.value : std::to_string(cloned->get_hash());
