@@ -14,25 +14,27 @@ using namespace std;
 string token_str(Token *token) {
 	string s = "";
 	switch (token->type) {
-		case TokObject: s += "TokObject"; break;
-		case TokMessage: s += "TokMessage"; break;
-		case TokSend: s += "TokSend"; break;
-		case TokStore: s += "TokStore"; break;
-		case TokValue: s += "TokValue"; break;
-		case TokEOF: s += "TokEOF"; break;
-		case TokStatementEnd: s += "TokStatementEnd"; break;
-		case TokSList: s += "TokSList"; break;
-		case TokSListBegin: s += "TokSListBegin"; break;
-		case TokSListEnd: s += "TokSListEnd"; break;
-		case TokOpenParend: s += "TokOpenParend"; break;
-		case TokCloseParend: s += "TokCloseParend"; break;
-		case TokComa: s += "TokComa"; break;
-		case TokFn: s += "TokFn"; break;
-		case TokIf: s += "TokIf"; break;
-		case TokElse: s += "TokElse"; break;
-		case TokInt: s += "TokInt"; break;
-		case TokChar: s += "TokChar"; break;
-		case TokString: s += "TokString"; break;
+#define tok_str(type) case type: s += #type; break;
+		tok_str(TokObject)
+		tok_str(TokMessage)
+		tok_str(TokSend)
+		tok_str(TokStore)
+		tok_str(TokValue)
+		tok_str(TokEOF)
+		tok_str(TokStatementEnd)
+		tok_str(TokSList)
+		tok_str(TokSListBegin)
+		tok_str(TokSListEnd)
+		tok_str(TokOpenParend)
+		tok_str(TokCloseParend)
+		tok_str(TokComa)
+		tok_str(TokFn)
+		tok_str(TokIf)
+		tok_str(TokElse)
+		tok_str(TokInt)
+		tok_str(TokChar)
+		tok_str(TokString)
+#undef tok_str
 	}
 	return s + "(" + token->value + ")";
 }

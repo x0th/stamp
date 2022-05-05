@@ -22,43 +22,44 @@ char scan_char(string &raw_string, long unsigned int *position) {
 }
 
 Token scan(string &raw_string, long unsigned int *position) {
+#define next_char scan_char(raw_string, position)
 	int c = raw_string[*position];
 	int i = 0;
 
-	while (isspace(c)) c = scan_char(raw_string, position);
+	while (isspace(c)) c = next_char;
 
 	if (c == '\0') return Token({ type: TokEOF, value: "" });
 
 	bool is_message = false;
 	if (c == '.') {
-		c = scan_char(raw_string, position);
+		c = next_char;
 		is_message = true;
 	}
 
 	switch (c) {
-		case ';': scan_char(raw_string, position); return Token({ type: TokStatementEnd, value: ""});
-		case '{': scan_char(raw_string, position); return Token({ type: TokSListBegin, value: ""});
-		case '}': scan_char(raw_string, position); return Token({ type: TokSListEnd, value: ""});
-		case '(': scan_char(raw_string, position); return Token({ type: TokOpenParend, value: ""});
-		case ')': scan_char(raw_string, position); return Token({ type: TokCloseParend, value: ""});
-		case ',': scan_char(raw_string, position); return Token({ type: TokComa, value: ""});
-		case '^': scan_char(raw_string, position); return Token({ type: TokMessage, value: "clone"});
-		case '!': scan_char(raw_string, position); scan_char(raw_string, position); return Token({ type: TokMessage, value: "!="});
+		case ';': next_char; return Token({ type: TokStatementEnd, value: ""});
+		case '{': next_char; return Token({ type: TokSListBegin, value: ""});
+		case '}': next_char; return Token({ type: TokSListEnd, value: ""});
+		case '(': next_char; return Token({ type: TokOpenParend, value: ""});
+		case ')': next_char; return Token({ type: TokCloseParend, value: ""});
+		case ',': next_char; return Token({ type: TokComa, value: ""});
+		case '^': next_char; return Token({ type: TokMessage, value: "clone"});
+		case '!': next_char; next_char; return Token({ type: TokMessage, value: "!="});
 		case '=': {
-			c = scan_char(raw_string, position);
+			c = next_char;
 
 			if (c == '=') {
-				scan_char(raw_string, position);
+				next_char;
 				return Token({ type: TokMessage, value: "==" });
 			}
 
 			return Token({ type: TokStore, value: "" });
 		}
 		case '\'': {
-			char ch = scan_char(raw_string, position);
+			char ch = next_char;
 			// (Most) escape sequences from https://en.wikipedia.org/wiki/Escape_sequences_in_C
 			if (ch == '\\') {
-				char esc = scan_char(raw_string, position);
+				char esc = next_char;
 				switch (esc) {
 					case 'a': ch = '\a'; break;
 					case 'b': ch = '\b'; break;
@@ -74,7 +75,7 @@ Token scan(string &raw_string, long unsigned int *position) {
 					case '\?': ch = '\?'; break;
 					case 'x': {
 						// FIXME: Only reads "proper" characters (of hex length 2), maybe should support lengths 1, 3 and beyond?
-						char num[] = {scan_char(raw_string, position), scan_char(raw_string, position)};
+						char num[] = {next_char, next_char};
 						std::stringstream s;
 						int hex;
 						s << std::hex << num;
@@ -87,17 +88,17 @@ Token scan(string &raw_string, long unsigned int *position) {
 				}
 			}
 			auto tok = Token({ type: TokChar, value: string{ch} });
-			c = scan_char(raw_string, position);
-			scan_char(raw_string, position);
+			c = next_char;
+			next_char;
 			if (c != '\'')
 				throw error_msg("Length of character is not valid.");
 			return tok;
 		}
 		case '\"': {
-			c = scan_char(raw_string, position);
+			c = next_char;
 			do {
 				if (c == '\\') {
-					char esc = scan_char(raw_string, position);
+					char esc = next_char;
 					switch (esc) {
 						case 'a': c = '\a'; break;
 						case 'b': c = '\b'; break;
@@ -113,7 +114,7 @@ Token scan(string &raw_string, long unsigned int *position) {
 						case '\?': c = '\?'; break;
 						case 'x': {
 							// FIXME: Only reads "proper" characters (of hex length 2), maybe should support lengths 1, 3 and beyond?
-							char num[] = {scan_char(raw_string, position), scan_char(raw_string, position)};
+							char num[] = {next_char, next_char};
 							std::stringstream s;
 							int hex;
 							s << std::hex << num;
@@ -128,10 +129,10 @@ Token scan(string &raw_string, long unsigned int *position) {
 				token_image[i++] = c;
 				if (i >= MAX_TOKEN_LEN)
 					throw error_msg("Maximum token length exceeded.");
-				c = scan_char(raw_string, position);
+				c = next_char;
 			} while (c != '\"');
 			token_image[i] = '\0';
-			scan_char(raw_string, position);
+			next_char;
 
 			return Token({ type: TokString, value: token_image });
 		}
@@ -141,7 +142,7 @@ Token scan(string &raw_string, long unsigned int *position) {
 					token_image[i++] = c;
 					if (i >= MAX_TOKEN_LEN)
 						throw error_msg("Maximum token length exceeded.");
-					c = scan_char(raw_string, position);	
+					c = next_char;
 				} while (isdigit(c));
 				token_image[i] = '\0';
 				return Token({ type: TokInt, value: token_image });
@@ -150,7 +151,7 @@ Token scan(string &raw_string, long unsigned int *position) {
 					token_image[i++] = c;
 					if (i >= MAX_TOKEN_LEN)
 						throw error_msg("Maximum token length exceeded.");
-					c = scan_char(raw_string, position);
+					c = next_char;
 				} while (isalpha(c) || isdigit(c) || c == '_');
 				token_image[i] = '\0';
 
@@ -162,4 +163,5 @@ Token scan(string &raw_string, long unsigned int *position) {
 			}
 		}
 	}
+#undef next_char
 }
