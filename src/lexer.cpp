@@ -55,13 +55,42 @@ Token scan(string &raw_string, long unsigned int *position) {
 			return Token({ type: TokStore, value: "" });
 		}
 		case '\'': {
-			// FIXME: want to have escape characters
 			char ch = scan_char(raw_string, position);
+			// (Most) escape sequences from https://en.wikipedia.org/wiki/Escape_sequences_in_C
+			if (ch == '\\') {
+				char esc = scan_char(raw_string, position);
+				switch (esc) {
+					case 'a': ch = '\a'; break;
+					case 'b': ch = '\b'; break;
+					case 'e': ch = static_cast<char>(0x1b); break;
+					case 'f': ch = '\f'; break;
+					case 'n': ch = '\n'; break;
+					case 'r': ch = '\r'; break;
+					case 't': ch = '\t'; break;
+					case 'v': ch = '\v'; break;
+					case '\\': ch = '\\'; break;
+					case '\'': ch = '\''; break;
+					case '\"': ch = '\"'; break;
+					case '\?': ch = '\?'; break;
+					case 'x': {
+						// FIXME: Only reads "proper" characters (of hex length 2), maybe should support lengths 1, 3 and beyond?
+						char num[] = {scan_char(raw_string, position), scan_char(raw_string, position)};
+						std::stringstream s;
+						int hex;
+						s << std::hex << num;
+						s >> hex;
+						ch = static_cast<char>(hex);
+						break;
+					}
+					// FIXME: Unicode (\u) support?
+					default: ch = esc; break;
+				}
+			}
 			auto tok = Token({ type: TokChar, value: string{ch} });
 			c = scan_char(raw_string, position);
 			scan_char(raw_string, position);
 			if (c != '\'')
-				throw error_msg("Char should be of length 1.");
+				throw error_msg("Length of character is not valid.");
 			return tok;
 		}
 		default: {
