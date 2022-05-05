@@ -93,7 +93,6 @@ public:
 	void store_char(string store_name, char character);
 	
 	Object *clone(ASTNode *sender);
-	Object *clone_list(ASTNode *sender);
 	Object *clone_callable(ASTNode *sender);
 private:
 	int hash;

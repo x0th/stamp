@@ -70,19 +70,20 @@ void initialize_global_context() {
 	// List
 	ASTNode list_lit(Token { type: TokValue, value: "List" });
 	auto list = object->clone(&list_lit);
-	list->store_list("value", new vector<Store *>());
 	list->store_lit("get", new string("::get"));
 	list->store_lit("push", new string("::push"));
-	list->store_lit("clone", new string("::clone_list"));
 	list->store_lit("size", new string("::size"));
+	list->store_lit("store_value", new string("::store_value"));
 
 	// Callable
 	ASTNode callable_lit(Token { type: TokValue, value: "Callable" });
 	auto callable = object->clone(&callable_lit);
 	ASTNode param_names_lit(Token { type: TokValue, value: "param_names" });
 	ASTNode param_binds_lit(Token { type: TokValue, value: "param_binds" });
-	auto param_names_list = list->clone_list(&param_names_lit);
-	auto param_binds_list = list->clone_list(&param_binds_lit);
+	auto param_names_list = list->clone(&param_names_lit);
+	auto param_binds_list = list->clone(&param_binds_lit);
+	param_names_list->store_list("value", new vector<Store *>());
+	param_binds_list->store_list("value", new vector<Store *>());
 	callable->store_obj("param_names", param_names_list);
 	callable->store_obj("param_binds", param_binds_list);
 	callable->store_lit("clone", new string("::clone_callable"));

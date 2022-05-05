@@ -74,8 +74,6 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		return new Store(clone(sender));
 	} else if (lit == "::clone_callable") {
 		return new Store(clone_callable(sender));
-	} else if (lit == "::clone_list") {
-		return new Store(clone_list(sender));
 	} else if (lit == "::==") {
 		int use_hash = hash;
 		if (requester)
@@ -326,22 +324,15 @@ Object *Object::clone_callable(ASTNode *sender) {
 
 	ASTNode param_names_lit(Token { type: TokValue, value: "param_names" });
 	ASTNode param_binds_lit(Token { type: TokValue, value: "param_binds" });
-	auto param_names_list = global_context->get("List")->get_obj()->clone_list(&param_names_lit);
-	auto param_binds_list = global_context->get("List")->get_obj()->clone_list(&param_binds_lit);
+	auto param_names_list = global_context->get("List")->get_obj()->clone(&param_names_lit);
+	auto param_binds_list = global_context->get("List")->get_obj()->clone(&param_binds_lit);
+	param_names_list->store_list("value", new vector<Store *>());
+	param_binds_list->store_list("value", new vector<Store *>());
 	cloned->store_obj("param_names", param_names_list);
 	cloned->store_obj("param_binds", param_binds_list);
 	cloned->store_lit("clone", new string("::clone_callable"));
 	cloned->context->add(new Store(param_names_list), "param_names_list");
 	cloned->context->add(new Store(param_binds_list), "param_binds_list");
-
-	return cloned;
-}
-
-Object *Object::clone_list(ASTNode *sender) {
-	Object * cloned = clone(sender);
-
-	cloned->store_list("value", new vector<Store *>());
-	cloned->store_lit("clone", new string("::clone_list"));
 
 	return cloned;
 }
@@ -361,6 +352,24 @@ string Object::to_string() {
 			}
 			case Store::Type::Char: {
 				return string{st->get_char()};
+			}
+			case Store::Type::List: {
+				stringstream s;
+				s << "[";
+				for (auto e : *st->get_list()) {
+					// FIXME: Ideally, this should be checked by querying the type of the list from the object
+					switch (e->get_store_type()) {
+						case Store::Type::Object: s << e->get_obj()->to_string(); break;
+						case Store::Type::Int: s << std::to_string(e->get_int()); break;
+						case Store::Type::Char: s << std::to_string(e->get_char()); break;
+						default: {
+							// FIXME: Error?
+						}
+					}
+					s << ", ";
+				}
+				s << "]";
+				return s.str();
 			}
 			default: {
 				// FIXME: Error
