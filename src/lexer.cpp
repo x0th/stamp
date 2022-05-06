@@ -46,16 +46,56 @@ Token scan(string &raw_string, long unsigned int *position) {
 		case '[': next_char; return Token({ type: TokSqBracketL, value: ""});
 		case ']': next_char; return Token({ type: TokSqBracketR, value: ""});
 		case '^': next_char; return Token({ type: TokMessage, value: "clone"});
-		case '!': next_char; next_char; return Token({ type: TokMessage, value: "!="});
+		case '%': next_char; return Token({ type: TokMessage, value: "%" });
+		case '*': next_char; return Token({ type: TokMessage, value: "*" });
+		case '/': next_char; return Token({ type: TokMessage, value: "/" });
+		case '+': next_char; return Token({ type: TokMessage, value: "+" });
+		case '-': next_char; return Token({ type: TokMessage, value: "-" });
+		case '<': {
+			c = next_char;
+			switch (c) {
+				case '<': next_char; return Token({ type: TokMessage, value: "<<"});
+				case '=': next_char; return Token({ type: TokMessage, value: "<=" });
+				default: return Token({ type: TokMessage, value: "<"});
+			}
+		}
+		case '>': {
+			c = next_char;
+			switch (c) {
+				case '>': next_char; return Token({ type: TokMessage, value: ">" });
+				case '=': next_char; return Token({ type: TokMessage, value: ">=" });
+				case '<': next_char; return Token({ type: TokMessage, value: "><" });
+				default: return Token({ type: TokMessage, value: ">" });
+			}
+		}
+		case '!': {
+			c = next_char;
+			if (c == '=') {
+				next_char; return Token({ type: TokMessage, value: "!=" });
+			}
+			return Token({ type: TokMessage, value: "!" });
+		}
+		case '&': {
+			c = next_char;
+			if (c == '&') {
+				next_char; return Token({ type: TokMessage, value: "&&" });
+			}
+			return Token({ type: TokMessage, value: "&" });
+		}
+		case '|': {
+			c = next_char;
+			if (c == '=') {
+				next_char; return Token({ type: TokMessage, value: "||" });
+			}
+			return Token({ type: TokMessage, value: "|" });
+		}
 		case '=': {
 			c = next_char;
-
 			if (c == '=') {
 				next_char;
-				return Token({ type: TokMessage, value: "==" });
+				return Token({type: TokMessage, value: "=="});
 			}
-
-			return Token({ type: TokStore, value: "" });
+			return Token({type: TokStore, value: ""});
 		}
 		case '\'': {
 			char ch = next_char;
