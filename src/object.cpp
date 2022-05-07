@@ -13,6 +13,8 @@
 
 using namespace std;
 
+#define global_object_hash(obj) global_context->get(obj)->get_obj()->get_hash()
+
 Object::Object(Object *_prototype) {
 	hash = rand();
 	prototype = _prototype;
@@ -98,11 +100,36 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 			// FIXME: Error
 		}
 
-		int result = requester->get_stores()["value"]->get_int() + obj->get_stores()["value"]->get_int();
+		ASTNode new_val(Token{ type: TokValue, value: "" });
+		Object *new_obj;
 
-		ASTNode new_val(Token{ type: TokValue, value: std::to_string(result) });
-		auto new_obj = this->clone(&new_val);
-		new_val.token.type = TokInt;
+		if (hash == global_object_hash("Int")) {
+			int result = requester->get_stores()["value"]->get_int() + obj->get_stores()["value"]->get_int();
+			new_val.token.value = std::to_string(result);
+			new_obj = clone(&new_val);
+			new_val.token.type = TokInt;
+		} else if (hash == global_object_hash("Char")) {
+			string result{requester->get_stores()["value"]->get_char(), obj->get_stores()["value"]->get_char()};
+			new_val.token.value = result;
+			new_obj = global_context->get("String")->get_obj()->clone(&new_val);
+			new_val.token.type = TokString;
+		} else if (hash == global_object_hash("String")) {
+			auto str1 = requester->get_stores()["value"]->get_list();
+			auto str2 = obj->get_stores()["value"]->get_list();
+			string result;
+			for (auto s : *str1) {
+				result += s->get_char();
+			}
+			for (auto s : *str2) {
+				result += s->get_char();
+			}
+			new_val.token.value = result;
+			new_obj = clone(&new_val);
+			new_val.token.type = TokString;
+		} else {
+			// FIXME: Error
+		}
+
 		Message msg("store_value", &new_val, new_obj);
 		new_obj->send(msg, nullptr);
 		return new Store(new_obj);
@@ -114,11 +141,48 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 			// FIXME: Error
 		}
 
-		int result = requester->get_stores()["value"]->get_int() * obj->get_stores()["value"]->get_int();
+		ASTNode new_val(Token{ type: TokValue, value: "" });
+		Object *new_obj;
 
-		ASTNode new_val(Token{ type: TokValue, value: std::to_string(result) });
-		auto new_obj = this->clone(&new_val);
-		new_val.token.type = TokInt;
+		if (hash == global_object_hash("Int")) {
+			if (obj->prototype->get_hash() == global_object_hash("Int")) {
+				int result = requester->get_stores()["value"]->get_int() * obj->get_stores()["value"]->get_int();
+				new_val.token.value = std::to_string(result);
+				new_obj = clone(&new_val);
+				new_val.token.type = TokInt;
+			} else if (obj->prototype->get_hash() == global_object_hash("String")) {
+				auto str = obj->get_stores()["value"]->get_list();
+				auto num_times = requester->get_stores()["value"]->get_int();
+				string result;
+				for (int i = 0; i < num_times; i++) {
+					for (auto s : *str) {
+						result += s->get_char();
+					}
+				}
+				new_val.token.value = result;
+				new_obj = clone(&new_val);
+				new_val.token.type = TokString;
+			} else {
+				// FIXME: Error
+			}
+		} else if (hash == global_object_hash("String")) {
+			if (obj->prototype->get_hash() == global_object_hash("Int")) {
+				auto str = requester->get_stores()["value"]->get_list();
+				auto num_times = obj->get_stores()["value"]->get_int();
+				string result;
+				for (int i = 0; i < num_times; i++) {
+					for (auto s : *str) {
+						result += s->get_char();
+					}
+				}
+				new_val.token.value = result;
+				new_obj = clone(&new_val);
+				new_val.token.type = TokString;
+			} else {
+				// FIXME: Error
+			}
+		}
+
 		Message msg("store_value", &new_val, new_obj);
 		new_obj->send(msg, nullptr);
 		return new Store(new_obj);
@@ -141,6 +205,48 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		ASTNode new_val(Token{ type: TokValue, value: std::to_string(result) });
 		auto new_obj = this->clone(&new_val);
 		new_val.token.type = TokInt;
+		Message msg("store_value", &new_val, new_obj);
+		new_obj->send(msg, nullptr);
+		return new Store(new_obj);
+	} else if (lit == "::/") {
+		string sout;
+		bool _should_return = false;
+		auto obj = sender->visit_statement(&sout, context, &_should_return);
+		if (sout != "") {
+			// FIXME: Error
+		}
+
+		ASTNode new_val(Token{type: TokValue, value: ""});
+		Object *new_obj;
+
+		if (hash == global_object_hash("Int")) {
+			int result = requester->get_stores()["value"]->get_int() / obj->get_stores()["value"]->get_int();
+			new_val.token.value = std::to_string(result);
+			new_obj = clone(&new_val);
+			new_val.token.type = TokInt;
+		}
+
+		Message msg("store_value", &new_val, new_obj);
+		new_obj->send(msg, nullptr);
+		return new Store(new_obj);
+	} else if (lit == "::%") {
+		string sout;
+		bool _should_return = false;
+		auto obj = sender->visit_statement(&sout, context, &_should_return);
+		if (sout != "") {
+			// FIXME: Error
+		}
+
+		ASTNode new_val(Token{type: TokValue, value: ""});
+		Object *new_obj;
+
+		if (hash == global_object_hash("Int")) {
+			int result = requester->get_stores()["value"]->get_int() % obj->get_stores()["value"]->get_int();
+			new_val.token.value = std::to_string(result);
+			new_obj = clone(&new_val);
+			new_val.token.type = TokInt;
+		}
+
 		Message msg("store_value", &new_val, new_obj);
 		new_obj->send(msg, nullptr);
 		return new Store(new_obj);

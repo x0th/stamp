@@ -145,17 +145,21 @@ void initialize_global_context() {
 	default_store(Int, "+");
 	default_store(Int, "-");
 	default_store(Int, "*");
+	default_store(Int, "/");
+	default_store(Int, "%");
 
 	// Char
 	lit(char_lit, "Char");
 	auto Char = object->clone(&char_lit);
 	default_store(Char, "store_value");
-	Char->store_lit("store_value", new string("::store_value"));
+	default_store(Char, "+");
 
 	// String
 	lit(string_lit, "String");
 	auto String = object->clone(&string_lit);
 	default_store(String, "store_value");
+	default_store(String, "+");
+	default_store(String, "*");
 
 	// add to global context
 	add_global(object, "Object");
