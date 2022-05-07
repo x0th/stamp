@@ -122,6 +122,28 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		Message msg("store_value", &new_val, new_obj);
 		new_obj->send(msg, nullptr);
 		return new Store(new_obj);
+	} else if (lit == "::-") {
+		string sout;
+		bool _should_return = false;
+		int result;
+
+		if (sender) {
+			auto obj = sender->visit_statement(&sout, requester->context, &_should_return);
+			if (sout != "") {
+				// FIXME: Error
+			}
+
+			result = requester->get_stores()["value"]->get_int() - obj->get_stores()["value"]->get_int();
+		} else {
+			result = -requester->get_stores()["value"]->get_int();
+		}
+
+		ASTNode new_val(Token{ type: TokValue, value: std::to_string(result) });
+		auto new_obj = this->clone(&new_val);
+		new_val.token.type = TokInt;
+		Message msg("store_value", &new_val, new_obj);
+		new_obj->send(msg, nullptr);
+		return new Store(new_obj);
 	} else if (lit == "::get") {
 		auto use_stores = requester ? requester->get_stores()["value"] : stores["value"];
 		auto element = (*use_stores->get_list())[stoi(sender->token.value)];

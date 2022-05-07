@@ -123,6 +123,7 @@ void parse_statement_list(ASTNode *s) {
 		case TokChar:
 		case TokString:
 		case TokSqBracketL:
+		case TokMessage:
 		{
 			st = parse_statement();
 			if (st) {
@@ -150,6 +151,21 @@ void parse_statement_list(ASTNode *s) {
 	}
 }
 
+bool is_operator(string &s) {
+	auto lst = global_context->get("Operators")->get_obj()->get_stores()["table"]->get_obj()->get_stores()["value"]->get_list();
+
+	for (long unsigned int i = 0; i < lst->size(); i++) {
+		auto p = (*lst)[i]->get_list();
+		for (auto op : *p) {
+			if (*op->get_lit() == s) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 ASTNode *parse_statement() {
 	switch (tok.type) {
 		case TokObject: {
@@ -158,6 +174,11 @@ ASTNode *parse_statement() {
 			return parse_statement_tail(object);
 		}
 		case TokValue: {
+			if (is_operator(tok.value)) {
+				tok.type = TokMessage;
+				return parse_statement();
+			}
+
 			auto object = new ASTNode(Token { type: TokObject, value: tok.value });
 			next_token(); // obj
 			return parse_statement_tail(object);
@@ -191,6 +212,18 @@ ASTNode *parse_statement() {
 		}
 		case TokIf: {
 			return parse_if();
+		}
+		case TokMessage: {
+			if (!is_operator(tok.value)) {
+				throw error_msg("Message at the start of statement was not an operator.");
+			}
+
+			vector<ASTNode *> children;
+			auto msg = tok;
+			next_token();
+			children.push_back(parse_statement());
+			children.push_back(new ASTNode(msg));
+			return new ASTNode(Token{ type: TokSend, value: "" }, children);
 		}
 		default:
 			return nullptr;
@@ -357,6 +390,10 @@ ASTNode *parse_parameters(ASTNode *s) {
 			return parse_parameters(s);
 		case TokObject:
 		case TokValue:
+		case TokInt:
+		case TokChar:
+		case TokString:
+		case TokSqBracketL:
 			st = parse_statement_rhs();
 			if (st) {
 				vector<ASTNode *> children;
@@ -554,7 +591,7 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 			next_token(); // [
 			parse_list(out);
 			return parse_message_tail(out);
-		};
+		}
 		case TokMessage: {
 			vector<ASTNode *> children;
 			children.push_back(previous_message);

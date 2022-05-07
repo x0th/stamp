@@ -143,6 +143,7 @@ void initialize_global_context() {
 	auto Int = object->clone(&int_lit);
 	default_store(Int, "store_value");
 	default_store(Int, "+");
+	default_store(Int, "-");
 	default_store(Int, "*");
 
 	// Char
