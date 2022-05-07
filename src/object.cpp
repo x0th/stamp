@@ -44,8 +44,6 @@ Store *Object::send(Message &message, string *out) {
 				auto lit = *store->get_lit();
 				if (lit.size() >= 2 && lit[0] == ':' && lit[1] == ':') {
 					auto store_out = handle_default(lit, message.get_sender(), out, message.get_requester());
-					// if (store_out->get_store_type() == Store::Type::Object)
-					// 	return store_out;
 					return store_out;
 				}
 				*out = lit;
@@ -102,7 +100,11 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 			case TokObject: use_stores->get_list()->push_back(new Store(context->get(sender->token.value)->get_obj())); break;
 			case TokSend: {
 				string sout;
-				auto obj = sender->visit_send(&sout, requester ? requester->context : context);
+				bool should_return = false;
+				auto obj = sender->visit_send(&sout, requester ? requester->context : context, &should_return);
+				if (should_return) {
+					// FIXME: Error
+				}
 				use_stores->get_list()->push_back(sout == "" ? new Store(obj) : new Store(new string(sout)));
 				break;
 			}
@@ -172,7 +174,12 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 					break;
 				case Store::Type::Executable: {
 					string sout;
-					auto obj_out = msg_obj->get_exe()->visit_statement(&sout, context);
+					bool should_return = false;
+					auto obj_out = msg_obj->get_exe()->visit_statement(&sout, context, &should_return);
+					if (should_return) {
+						// FIXME: error
+					}
+
 					if (sout != "") {
 						context->add(new Store(new string(sout)), obj_name);
 						break;
@@ -186,7 +193,8 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 
 		// execute body
 		string sout;
-		auto obj_out = obj->get_stores()["body"]->get_exe()->visit_statement(&sout, context);
+		bool _should_return; // dummy
+		auto obj_out = obj->get_stores()["body"]->get_exe()->visit_statement(&sout, context, &_should_return);
 
 		// restore context
 		delete context;
@@ -212,10 +220,17 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		return new Store(this);
 	} else if (lit == "::if_true") {
 		auto children = sender->get_children();
-		auto condition = children[0]->visit_statement(nullptr, context);
+		bool should_return = false;
+		auto condition = children[0]->visit_statement(nullptr, context, &should_return);
+		if (should_return) {
+			// FIXME: Error
+		}
 		if (condition == global_context->get("true")->get_obj()) {
 			string sout;
-			auto obj = children[1]->visit_statement(&sout, context);
+			auto obj = children[1]->visit_statement(&sout, context, &should_return);
+			if (should_return) {
+				// FIXME: Error
+			}
 			if (sout != "") {
 				*out = sout;
 				return nullptr;
@@ -224,7 +239,10 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		} else if (condition == global_context->get("false")->get_obj()) {
 			if (children.size() == 3) {
 				string sout;
-				auto obj = children[2]->visit_statement(&sout, context);
+				auto obj = children[2]->visit_statement(&sout, context, &should_return);
+				if (should_return) {
+					// FIXME: Error
+				}
 				if (sout != "") {
 					*out = sout;
 					return nullptr;
@@ -238,10 +256,17 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		return nullptr;
 	} else if (lit == "::if_false") {
 		auto children = sender->get_children();
-		auto condition = children[0]->visit_statement(nullptr, context);
+		bool should_return = false;
+		auto condition = children[0]->visit_statement(nullptr, context, &should_return);
+		if (should_return) {
+			// FIXME: Error
+		}
 		if (condition == global_context->get("false")->get_obj()) {
 			string sout;
-			auto obj = children[1]->visit_statement(&sout, context);
+			auto obj = children[1]->visit_statement(&sout, context, &should_return);
+			if (should_return) {
+				// FIXME: Error
+			}
 			if (sout != "") {
 				*out = sout;
 				return nullptr;
@@ -250,7 +275,10 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		} else if (condition == global_context->get("true")->get_obj()) {
 			if (children.size() == 3) {
 				string sout;
-				auto obj = children[2]->visit_statement(&sout, context);
+				auto obj = children[2]->visit_statement(&sout, context, &should_return);
+				if (should_return) {
+					// FIXME: Error
+				}
 				if (sout != "") {
 					*out = sout;
 					return nullptr;

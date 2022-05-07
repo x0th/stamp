@@ -14,13 +14,14 @@ using namespace std;
 
 string ASTNode::visit() {
 	string out;
-	auto obj = visit_statement(&out, global_context);
+	bool _should_return; // dummy variable
+	auto obj = visit_statement(&out, global_context, &_should_return);
 	if (out != "")
 		return out;
 	return obj->to_string();
 }
 
-Object *ASTNode::visit_statement(string *out, Context *context) {
+Object *ASTNode::visit_statement(string *out, Context *context, bool *should_return) {
 	switch (token.type) {
 		case TokSList: {
 			string sout;
@@ -32,7 +33,10 @@ Object *ASTNode::visit_statement(string *out, Context *context) {
 
 			for (auto &c : children) {
 				sout = "";
-				obj = c->visit_statement(&sout, context);
+				bool statement_returned = false;
+				obj = c->visit_statement(&sout, context, &statement_returned);
+				if (statement_returned)
+					break;
 			}
 			if (sout != "") {
 				*out = sout;
@@ -51,7 +55,10 @@ Object *ASTNode::visit_statement(string *out, Context *context) {
 		}
 		case TokSend: {
 			string sout;
-			auto obj = visit_send(&sout, context);
+			bool send_returned = false;
+			auto obj = visit_send(&sout, context, &send_returned);
+			if (send_returned)
+				*should_return = true;
 			if (sout != "") {
 				*out = sout;
 				return nullptr;
@@ -70,7 +77,8 @@ Object *ASTNode::visit_object(string *out, Context *context) {
 		case Store::Type::Literal: *out = *store->get_lit(); return nullptr;
 		case Store::Type::Executable: {
 			string sout;
-			auto obj = store->get_exe()->visit_statement(&sout, context);
+			bool _should_return = false; // dummy variable
+			auto obj = store->get_exe()->visit_statement(&sout, context, &_should_return);
 			if (sout != "") {
 				*out = sout;
 				context->add(new Store(new string(sout)), token.value);
@@ -91,10 +99,21 @@ Message ASTNode::visit_message() {
 	return Message(token.value, children[0], nullptr);
 }
 
-Object *ASTNode::visit_send(string *out, Context *context) {
-	auto obj = children[0]->token.type == TokSend ? children[0]->visit_send(out, context) : children[0]->visit_object(nullptr, context);
+Object *ASTNode::visit_send(string *out, Context *context, bool *should_return) {
+	auto obj = children[0]->token.type == TokSend ? children[0]->visit_send(out, context, should_return) : children[0]->visit_object(nullptr, context);
 
 	auto msg = children[1]->visit_message();
+
+	if (msg.get_name() == "return") {
+		// We're in a function
+		if (context != global_context) {
+			*should_return = true;
+			return obj;
+		} else {
+			// FIXME: Error
+		}
+	}
+
 	auto msg_obj = obj->send(msg, out);
 
 	if (msg.get_name() == "clone")
@@ -109,7 +128,12 @@ Object *ASTNode::visit_store(Context *context) {
 	auto obj = children[0]->visit_object(nullptr, context);
 
 	string sout;
-	auto rhs = children[2]->token.type == TokSend ? children[2]->visit_send(&sout, obj->get_context()) : children[2]->visit_object(nullptr, obj->get_context());
+	bool should_return = false;
+	auto rhs = children[2]->token.type == TokSend ? children[2]->visit_send(&sout, obj->get_context(), &should_return) : children[2]->visit_object(nullptr, obj->get_context());
+
+	if (should_return) {
+		// FIXME: Error
+	}
 
 	if (sout != "")
 		obj->get_stores()[children[1]->token.value] = new Store(new string(sout));
