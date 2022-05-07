@@ -6,8 +6,10 @@
 
 #include "parser.h"
 #include "lexer.h"
+#include "context.h"
 
 #include <iostream>
+#include <utility>
 
 using namespace std;
 
@@ -500,31 +502,52 @@ ASTNode *parse_else_tail() {
 	}
 }
 
+inline bool swap_precedence(string &old_operator, string &new_operator) {
+	int precedence_old = -1, precedence_new = -1;
+	auto lst = global_context->get("Operators")->get_obj()->get_stores()["table"]->get_obj()->get_stores()["value"]->get_list();
+
+	for (long unsigned int i = 0; i < lst->size(); i++) {
+		auto p = (*lst)[i]->get_list();
+		for (auto op : *p) {
+			if (*op->get_lit() == old_operator) {
+				precedence_old = i;
+			}
+			if (*op->get_lit() == new_operator) {
+				precedence_new = i;
+			}
+		}
+	}
+
+	if (precedence_old <= precedence_new)
+		return false;
+	return true;
+}
+
 ASTNode *parse_message_tail(ASTNode *previous_message) {
 	switch (tok.type) {
 		case TokObject:
 		case TokValue: {
 			previous_message->get_children()[1]->get_children().push_back(new ASTNode(tok));
 			next_token();
-			return previous_message;
+			return parse_message_tail(previous_message);
 		}
 		case TokInt: {
 			create_basic_obj(TokInt, "Int");
 			previous_message->get_children()[1]->get_children().push_back(out);
 			next_token();
-			return previous_message;
+			return parse_message_tail(previous_message);
 		}
 		case TokChar: {
 			create_basic_obj(TokChar, "Char");
 			previous_message->get_children()[1]->get_children().push_back(out);
 			next_token();
-			return previous_message;
+			return parse_message_tail(previous_message);
 		}
 		case TokString: {
 			create_basic_obj(TokString, "String");
 			previous_message->get_children()[1]->get_children().push_back(out);
 			next_token();
-			return previous_message;
+			return parse_message_tail(previous_message);
 		}
 		case TokSqBracketL: {
 			create_basic_obj(TokList, "List");
@@ -537,7 +560,16 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 			children.push_back(previous_message);
 			children.push_back(new ASTNode(tok));
 			next_token();
-			return parse_message_tail(new ASTNode(Token { type: TokSend, value: "" }, children));
+			auto next_message =  parse_message_tail(new ASTNode(Token { type: TokSend, value: "" }, children));
+			// Change order of messages based on precedence
+			if (previous_message->token.type && swap_precedence(previous_message->get_children()[1]->token.value, children[1]->token.value)) {
+				auto prev = previous_message->get_children()[1];
+				auto new_send = new ASTNode(Token { type: TokSend, value: "" }, vector<ASTNode *>{prev->get_children()[0], children[1]});
+				prev->get_children()[0] = new_send;
+				// FIXME: memory leak of the TokSend passed to parse_message_tail_above ?
+				return children[0];
+			}
+			return next_message;
 		}
 		case TokOpenParend: {
 			next_token(); // (

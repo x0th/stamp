@@ -45,6 +45,10 @@ void Context::dump() {
 }
 
 void initialize_global_context() {
+#define default_store(obj, name) obj->store_lit(name, new string(string("::") + name))
+#define add_global(obj, name) global_context->add(new Store(obj), name)
+#define lit(lit_name, name) ASTNode lit_name(Token { type: TokValue, value: name })
+
 	srand(time(nullptr));
 
 	global_context = new Context();
@@ -52,34 +56,67 @@ void initialize_global_context() {
 	// Object
 	auto object = new Object(nullptr);
 	object->store_lit("type", new string("Object"));
-	object->store_lit("clone", new string("::clone"));
-	object->store_lit("==", new string("::=="));
-	object->store_lit("!=", new string("::!="));
+	default_store(object, "clone");
+	default_store(object, "==");
+	default_store(object, "!=");
 	// FIXME: maybe store these in a separate object?
-	object->store_lit("if_true", new string("::if_true"));
-	object->store_lit("if_false", new string("::if_false"));
+	default_store(object, "if_true");
+	default_store(object, "if_false");
 
 	// true, false
-	ASTNode tr_lit(Token { type: TokValue, value: "true" });
-	ASTNode fs_lit(Token { type: TokValue, value: "false" });
+	lit(tr_lit, "true");
+	lit(fs_lit, "false");
 	auto tr = object->clone(&tr_lit);
 	auto fs = object->clone(&fs_lit);
 	tr->get_stores()["clone"] = new Store(tr);
 	fs->get_stores()["clone"] = new Store(fs);
 
 	// List
-	ASTNode list_lit(Token { type: TokValue, value: "List" });
+	lit(list_lit, "List");
 	auto list = object->clone(&list_lit);
-	list->store_lit("get", new string("::get"));
-	list->store_lit("push", new string("::push"));
-	list->store_lit("size", new string("::size"));
-	list->store_lit("store_value", new string("::store_value"));
+	default_store(list, "get");
+	default_store(list, "push");
+	default_store(list, "size");
+	default_store(list, "store_value");
+
+	// Operators
+	lit(operators_lit, "Operators");
+	auto operators = object->clone(&operators_lit);
+	lit(table_lit, "table");
+	auto table = list->clone(&table_lit);
+	table->store_list("value", new vector<Store *>());
+	// 1. % * /
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("%")), new Store(new string("*")), new Store(new string("/"))}));
+	// 2. + -
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("+")), new Store(new string("-"))}));
+	// 3. << >>
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("<<")), new Store(new string(">>"))}));
+	// 4. < <= > >=
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("<")), new Store(new string("<=")), new Store(new string(">")), new Store(new string(">="))}));
+	// 5. != ==
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("!=")), new Store(new string("=="))}));
+	// 6. &
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("&"))}));
+	// 7. ><
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("><"))}));
+	// 8. |
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("|"))}));
+	// 9. &&
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("&&"))}));
+	// 10. ||
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("||"))}));
+	// 11. !
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("!"))}));
+	// 12. return
+	table->get_stores()["value"]->get_list()->push_back(new Store(new vector<Store *>{new Store(new string("return"))}));
+	operators->store_obj("table", table);
+	operators->get_stores()["clone"] = new Store(operators);
 
 	// Callable
-	ASTNode callable_lit(Token { type: TokValue, value: "Callable" });
+	lit(callable_lit, "Callable");
 	auto callable = object->clone(&callable_lit);
-	ASTNode param_names_lit(Token { type: TokValue, value: "param_names" });
-	ASTNode param_binds_lit(Token { type: TokValue, value: "param_binds" });
+	lit(param_names_lit, "param_names");
+	lit(param_binds_lit, "param_binds");
 	auto param_names_list = list->clone(&param_names_lit);
 	auto param_binds_list = list->clone(&param_binds_lit);
 	param_names_list->store_list("value", new vector<Store *>());
@@ -87,43 +124,51 @@ void initialize_global_context() {
 	callable->store_obj("param_names", param_names_list);
 	callable->store_obj("param_binds", param_binds_list);
 	callable->store_lit("clone", new string("::clone_callable"));
-	callable->store_lit("store_param", new string("::store_param"));
-	callable->store_lit("pass_param", new string("::pass_param"));
-	callable->store_lit("call", new string("::call"));
-	callable->store_lit("store_body", new string("::store_body"));
+	default_store(callable, "store_param");
+	default_store(callable, "pass_param");
+	default_store(callable, "call");
+	default_store(callable, "store_body");
 	callable->get_context()->add(new Store(param_names_list), "param_names_list");
 	callable->get_context()->add(new Store(param_binds_list), "param_binds_list");
 
 	// if
-	ASTNode if_lit(Token { type: TokValue, value: "if" });
+	lit(if_lit, "if");
 	auto i_f = object->clone(&if_lit);
-	i_f->store_lit("if_true", new string("::if_true"));
-	i_f->store_lit("if_false", new string("::if_false"));
+	default_store(i_f, "if_true");
+	default_store(i_f, "if_false");
 	i_f->get_stores()["if"] = new Store(i_f);
 
 	// Int
-	ASTNode int_lit(Token { type: TokValue, value: "Int" });
+	lit(int_lit, "Int");
 	auto Int = object->clone(&int_lit);
-	Int->store_lit("store_value", new string("::store_value"));
+	default_store(Int, "store_value");
+	default_store(Int, "+");
+	default_store(Int, "*");
 
 	// Char
-	ASTNode char_lit(Token { type: TokValue, value: "Char" });
+	lit(char_lit, "Char");
 	auto Char = object->clone(&char_lit);
+	default_store(Char, "store_value");
 	Char->store_lit("store_value", new string("::store_value"));
 
 	// String
-	ASTNode string_lit(Token { type: TokValue, value: "String" });
+	lit(string_lit, "String");
 	auto String = object->clone(&string_lit);
-	String->store_lit("store_value", new string("::store_value"));
+	default_store(String, "store_value");
 
 	// add to global context
-	global_context->add(new Store(object), "Object");
-	global_context->add(new Store(tr), "true");
-	global_context->add(new Store(fs), "false");
-	global_context->add(new Store(callable), "Callable");
-	global_context->add(new Store(list), "List");
-	global_context->add(new Store(i_f), "if");
-	global_context->add(new Store(Int), "Int");
-	global_context->add(new Store(Char), "Char");
-	global_context->add(new Store(String), "String");
+	add_global(object, "Object");
+	add_global(tr, "true");
+	add_global(fs, "false");
+	add_global(callable, "Callable");
+	add_global(list, "List");
+	add_global(operators, "Operators");
+	add_global(i_f, "if");
+	add_global(Int, "Int");
+	add_global(Char, "Char");
+	add_global(String, "String");
+
+#undef default_store
+#undef add_global
+#undef lit
 }

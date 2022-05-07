@@ -90,6 +90,38 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 			return global_context->get("true");
 		else
 			return global_context->get("false");
+	} else if (lit == "::+") {
+		string sout;
+		bool _should_return = false;
+		auto obj = sender->visit_statement(&sout, context, &_should_return);
+		if (sout != "") {
+			// FIXME: Error
+		}
+
+		int result = requester->get_stores()["value"]->get_int() + obj->get_stores()["value"]->get_int();
+
+		ASTNode new_val(Token{ type: TokValue, value: std::to_string(result) });
+		auto new_obj = this->clone(&new_val);
+		new_val.token.type = TokInt;
+		Message msg("store_value", &new_val, new_obj);
+		new_obj->send(msg, nullptr);
+		return new Store(new_obj);
+	} else if (lit == "::*") {
+		string sout;
+		bool _should_return = false;
+		auto obj = sender->visit_statement(&sout, requester->context, &_should_return);
+		if (sout != "") {
+			// FIXME: Error
+		}
+
+		int result = requester->get_stores()["value"]->get_int() * obj->get_stores()["value"]->get_int();
+
+		ASTNode new_val(Token{ type: TokValue, value: std::to_string(result) });
+		auto new_obj = this->clone(&new_val);
+		new_val.token.type = TokInt;
+		Message msg("store_value", &new_val, new_obj);
+		new_obj->send(msg, nullptr);
+		return new Store(new_obj);
 	} else if (lit == "::get") {
 		auto use_stores = requester ? requester->get_stores()["value"] : stores["value"];
 		auto element = (*use_stores->get_list())[stoi(sender->token.value)];
@@ -377,6 +409,33 @@ Object *Object::clone_callable(ASTNode *sender) {
 	return cloned;
 }
 
+inline string list_string(vector<Store *> &lst) {
+	stringstream s;
+	s << "[";
+	for (long unsigned int i = 0; i < lst.size(); i++) {
+		auto e = lst[i];
+		// FIXME: Ideally, this should be checked by querying the type of the list from the object
+		switch (e->get_store_type()) {
+			case Store::Type::Object: s << e->get_obj()->to_string(); break;
+			case Store::Type::Int: s << std::to_string(e->get_int()); break;
+			case Store::Type::Char: s << e->get_char(); break;
+			case Store::Type::Literal: s << *e->get_lit(); break;
+			case Store::Type::List: {
+				auto new_list = *e->get_list();
+				s << list_string(new_list);
+				break;
+			}
+			default: {
+				// FIXME: Error?
+			}
+		}
+		if (i != lst.size() - 1)
+			s << ", ";
+	}
+	s << "]";
+	return s.str();
+}
+
 string Object::to_string() {
 	if (hash == global_context->get("true")->get_obj()->get_hash())
 		return "true";
@@ -394,26 +453,8 @@ string Object::to_string() {
 				return string{st->get_char()};
 			}
 			case Store::Type::List: {
-				stringstream s;
-				s << "[";
 				auto lst = *st->get_list();
-				for (long unsigned int i = 0; i < lst.size(); i++) {
-					auto e = lst[i];
-					// FIXME: Ideally, this should be checked by querying the type of the list from the object
-					switch (e->get_store_type()) {
-						case Store::Type::Object: s << e->get_obj()->to_string(); break;
-						case Store::Type::Int: s << std::to_string(e->get_int()); break;
-						case Store::Type::Char: s << e->get_char(); break;
-						case Store::Type::Literal: s << *e->get_lit(); break;
-						default: {
-							// FIXME: Error?
-						}
-					}
-					if (i != lst.size() - 1)
-						s << ", ";
-				}
-				s << "]";
-				return s.str();
+				return list_string(lst);
 			}
 			default: {
 				// FIXME: Error
