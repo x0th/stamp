@@ -35,6 +35,7 @@ ASTNode *parse_statement_rhs();
 ASTNode *parse_if();
 ASTNode *parse_if_tail();
 ASTNode *parse_else_tail();
+ASTNode *parse_while();
 ASTNode *parse_list(ASTNode *list);
 
 #define clone_obj(obj_name)                                                                                     \
@@ -119,6 +120,7 @@ void parse_statement_list(ASTNode *s) {
 		case TokValue:
 		case TokFn:
 		case TokIf:
+		case TokWhile:
 		case TokInt:
 		case TokChar:
 		case TokString:
@@ -212,6 +214,9 @@ ASTNode *parse_statement() {
 		}
 		case TokIf: {
 			return parse_if();
+		}
+		case TokWhile: {
+			return parse_while();
 		}
 		case TokMessage: {
 			if (!is_operator(tok.value)) {
@@ -536,6 +541,32 @@ ASTNode *parse_else_tail() {
 			throw "Unexpected end of file.";
 		default:
 			throw error_msg("Expected if or {. Found: " + token_readable(&tok) + ".");
+	}
+}
+
+ASTNode *parse_while() {
+	switch (tok.type) {
+		case TokWhile: {
+			match(TokOpenParend); // (
+			next_token(); // obj
+			auto full_param = parse_statement_rhs();
+			auto body = parse_program();
+
+			vector<ASTNode *> children;
+			children.push_back(new ASTNode(Token { type: TokObject, value: "while" }));
+
+			vector<ASTNode *> list_children;
+			list_children.push_back(full_param);
+			list_children.push_back(body);
+
+			auto msg = new ASTNode(Token { type: TokMessage, value: "exec_while_true" });
+			msg->get_children().push_back(new ASTNode(Token { type: TokSList, value: "" }, list_children));
+
+			children.push_back(msg);
+			return new ASTNode(Token { type: TokSend, value: "" }, children);
+		}
+		default:
+			throw error_msg("Expected while. Found: " + token_readable(&tok) + ".");
 	}
 }
 

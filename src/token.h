@@ -31,6 +31,7 @@ enum TokenType {
 	TokSqBracketL,
 	TokSqBracketR,
 	TokList,
+	TokWhile,
 };
 
 struct Token

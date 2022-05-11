@@ -37,6 +37,7 @@ string token_str(Token *token) {
 		tok_str(TokSqBracketL)
 		tok_str(TokSqBracketR)
 		tok_str(TokList)
+		tok_str(TokWhile)
 #undef tok_str
 	}
 	return s + "(" + token->value + ")";
@@ -66,6 +67,7 @@ string token_readable(Token *token) {
 		case TokElse: return "else";
 		case TokSqBracketL: return "[";
 		case TokSqBracketR: return "]";
+		case TokWhile: return "while";
 	}
 	return "";
 }

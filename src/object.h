@@ -100,5 +100,5 @@ private:
 	map<string, Store *> stores;
 	Context *context;
 
-	Store *handle_default(string &lit, ASTNode *sender, string *out, Object *reqester);
+	Store *handle_default(string &lit, ASTNode *sender, string *out, Object *requester);
 };

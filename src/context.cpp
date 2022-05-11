@@ -138,6 +138,13 @@ void initialize_global_context() {
 	default_store(i_f, "if_false");
 	i_f->get_stores()["if"] = new Store(i_f);
 
+	// while
+	lit(while_lit, "while");
+	auto while_ = object->clone(&while_lit);
+	default_store(while_, "exec_while_true");
+	default_store(while_, "exec_while_false");
+	while_->get_stores()["while"] = new Store(while_);
+
 	// Int
 	lit(int_lit, "Int");
 	auto Int = object->clone(&int_lit);
@@ -169,6 +176,7 @@ void initialize_global_context() {
 	add_global(list, "List");
 	add_global(operators, "Operators");
 	add_global(i_f, "if");
+	add_global(while_, "while");
 	add_global(Int, "Int");
 	add_global(Char, "Char");
 	add_global(String, "String");

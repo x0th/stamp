@@ -200,6 +200,7 @@ Token scan(string &raw_string, long unsigned int *position) {
 				if (token_image == string("fn")) return Token({ type: TokFn, value: "" });
 				if (token_image == string("if")) return Token({ type: TokIf, value: "" });
 				if (token_image == string("else")) return Token({ type: TokElse, value: "" });
+				if (token_image == string("while")) return Token({ type: TokWhile, value: "" });
 				if (token_image[0] >= 65 && token_image[0] <= 90) return Token({ type: TokObject, value: token_image });
 				return is_message ? Token({ type: TokMessage, value: token_image }) : Token({ type: TokValue, value: token_image });
 			}

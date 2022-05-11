@@ -478,6 +478,24 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 			}
 		}
 		return new Store(obj);
+	} else if (lit == "::exec_while_true") {
+		while (true) {
+			auto children = sender->get_children();
+			bool should_return = false;
+			auto condition = children[0]->visit_statement(nullptr, context, &should_return);
+			if (should_return) {
+				// FIXME: Error
+			}
+			if (condition == global_context->get("true")->get_obj()) {
+				string sout;
+				children[1]->visit_statement(&sout, context, &should_return);
+				if (should_return) {
+					// FIXME: Error
+				}
+			} else if (condition == global_context->get("false")->get_obj()) {
+				break;
+			}
+		}
 	}
 
 	return nullptr; // FIXME: error
