@@ -21,7 +21,7 @@ Object::Object(Object *_prototype) {
 	context = new Context();
 }
 
-Store *Object::send(Message &message, string *out) {
+Store *Object::send(Message &message, string *out, Object *external_object) {
 	if (message.get_name() == "proto") {
 		if (!prototype) {
 			*out = "None";
@@ -45,6 +45,8 @@ Store *Object::send(Message &message, string *out) {
 			case Store::Type::Literal: {
 				auto lit = *store->get_lit();
 				if (lit.size() >= 2 && lit[0] == ':' && lit[1] == ':') {
+					if (external_object)
+						message.set_requester(external_object);
 					auto store_out = handle_default(lit, message.get_sender(), out, message.get_requester());
 					return store_out;
 				}
@@ -59,7 +61,9 @@ Store *Object::send(Message &message, string *out) {
 		if (prototype) {
 			if (!message.get_requester())
 				message.set_requester(this);
-			return prototype->send(message, out);
+			if (external_object)
+				message.set_requester(external_object);
+			return prototype->send(message, out, external_object);
 		}
 
 		// no prototype, should throw error
@@ -261,7 +265,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 			case TokSend: {
 				string sout;
 				bool should_return = false;
-				auto obj = sender->visit_send(&sout, requester ? requester->context : context, &should_return);
+				auto obj = sender->visit_send(&sout, requester ? requester->context : context, &should_return, requester->get_external());
 				if (should_return) {
 					// FIXME: Error
 				}
@@ -284,11 +288,11 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		string sout;
 
 		if (requester) {
-			requester->get_stores()["param_names"]->get_obj()->send(msg, &sout);
+			requester->get_stores()["param_names"]->get_obj()->send(msg, &sout, nullptr);
 			return new Store(requester);
 		}
 
-		stores["param_names"]->get_obj()->send(msg, &sout);
+		stores["param_names"]->get_obj()->send(msg, &sout, nullptr);
 		return new Store(this);
 	} else if (lit == "::store_body") {
 		if (requester) {
@@ -314,7 +318,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		// FIXME: verify that two lists are of equal size
 		Message size_msg("size", nullptr, nullptr);
 		string size_str;
-		param_names->send(size_msg, &size_str);
+		param_names->send(size_msg, &size_str, nullptr);
 		int size = stoi(size_str);
 
 		auto get_sender = new ASTNode(Token { type: TokValue, value: "0" });
@@ -323,10 +327,10 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		for (int i = 0; i < size; i++) {
 			get_sender->token.value = std::to_string(i);
 			get_msg.set_requester(nullptr);
-			auto obj_name = *param_names->send(get_msg, nullptr)->get_lit();
+			auto obj_name = *param_names->send(get_msg, nullptr, nullptr)->get_lit();
 			get_msg.set_requester(nullptr);
 
-			auto msg_obj = param_binds->send(get_msg, nullptr);
+			auto msg_obj = param_binds->send(get_msg, nullptr, nullptr);
 			switch (msg_obj->get_store_type()) {
 				case Store::Type::Object:
 				case Store::Type::Literal:
@@ -335,7 +339,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 				case Store::Type::Executable: {
 					string sout;
 					bool should_return = false;
-					auto obj_out = msg_obj->get_exe()->visit_statement(&sout, context, &should_return);
+					auto obj_out = msg_obj->get_exe()->visit_statement(&sout, context, &should_return, requester->get_external());
 					if (should_return) {
 						// FIXME: error
 					}
@@ -354,7 +358,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		// execute body
 		string sout;
 		bool _should_return; // dummy
-		auto obj_out = obj->get_stores()["body"]->get_exe()->visit_statement(&sout, context, &_should_return);
+		auto obj_out = obj->get_stores()["body"]->get_exe()->visit_statement(&sout, context, &_should_return, requester->get_external());
 
 		// restore context
 		delete context;
@@ -372,22 +376,22 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 
 		// FIXME: verify that we stored an object
 		if (requester) {
-			requester->get_stores()["param_binds"]->get_obj()->send(msg, &sout);
+			requester->get_stores()["param_binds"]->get_obj()->send(msg, &sout, nullptr);
 			return new Store(requester);
 		}
 
-		stores["param_binds"]->get_obj()->send(msg, &sout);
+		stores["param_binds"]->get_obj()->send(msg, &sout, nullptr);
 		return new Store(this);
 	} else if (lit == "::if_true") {
 		auto children = sender->get_children();
 		bool should_return = false;
-		auto condition = children[0]->visit_statement(nullptr, context, &should_return);
+		auto condition = children[0]->visit_statement(nullptr, context, &should_return, requester);
 		if (should_return) {
 			// FIXME: Error
 		}
 		if (condition == global_context->get("true")->get_obj()) {
 			string sout;
-			auto obj = children[1]->visit_statement(&sout, context, &should_return);
+			auto obj = children[1]->visit_statement(&sout, context, &should_return, requester);
 			if (should_return) {
 				// FIXME: Error
 			}
@@ -399,7 +403,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		} else if (condition == global_context->get("false")->get_obj()) {
 			if (children.size() == 3) {
 				string sout;
-				auto obj = children[2]->visit_statement(&sout, context, &should_return);
+				auto obj = children[2]->visit_statement(&sout, context, &should_return, requester);
 				if (should_return) {
 					// FIXME: Error
 				}
@@ -417,13 +421,13 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 	} else if (lit == "::if_false") {
 		auto children = sender->get_children();
 		bool should_return = false;
-		auto condition = children[0]->visit_statement(nullptr, context, &should_return);
+		auto condition = children[0]->visit_statement(nullptr, context, &should_return, requester);
 		if (should_return) {
 			// FIXME: Error
 		}
 		if (condition == global_context->get("false")->get_obj()) {
 			string sout;
-			auto obj = children[1]->visit_statement(&sout, context, &should_return);
+			auto obj = children[1]->visit_statement(&sout, context, &should_return, requester);
 			if (should_return) {
 				// FIXME: Error
 			}
@@ -435,7 +439,7 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		} else if (condition == global_context->get("true")->get_obj()) {
 			if (children.size() == 3) {
 				string sout;
-				auto obj = children[2]->visit_statement(&sout, context, &should_return);
+				auto obj = children[2]->visit_statement(&sout, context, &should_return, requester);
 				if (should_return) {
 					// FIXME: Error
 				}
@@ -482,13 +486,13 @@ Store *Object::handle_default(string &lit, ASTNode *sender, string *out, Object 
 		while (true) {
 			auto children = sender->get_children();
 			bool should_return = false;
-			auto condition = children[0]->visit_statement(nullptr, context, &should_return);
+			auto condition = children[0]->visit_statement(nullptr, context, &should_return, requester);
 			if (should_return) {
 				// FIXME: Error
 			}
 			if (condition == global_context->get("true")->get_obj()) {
 				string sout;
-				children[1]->visit_statement(&sout, context, &should_return);
+				children[1]->visit_statement(&sout, context, &should_return, requester);
 				if (should_return) {
 					// FIXME: Error
 				}
@@ -528,6 +532,7 @@ void Object::store_char(string store_name, char character) {
 Object *Object::clone(ASTNode *sender) {
 	Object *cloned = new Object(this);
 	string new_type = sender ? sender->token.value : std::to_string(cloned->get_hash());
+	cloned->context = new Context();
 
 	if (new_type[0] >= 65 && new_type[0] <= 90) {
 		cloned->store_lit("type", new string(new_type));
@@ -611,7 +616,7 @@ string Object::to_string() {
 	stringstream s;
 	string out;
 	Message msg("type", nullptr, nullptr);
-	send(msg, &out);
+	send(msg, &out, nullptr);
 	s << out << "-" << hex << hash;
 	return s.str();
 }

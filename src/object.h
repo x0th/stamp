@@ -81,10 +81,12 @@ public:
 	int get_hash() const { return hash; }
 	map<string, Store *> &get_stores() { return stores; }
 	Context *get_context() { return context; }
+	Object *get_external() { return external; }
+	void set_external(Object *ext) { external = ext; }
 
 	string to_string();
 	
-	Store *send(Message &message, string *out);
+	Store *send(Message &message, string *out, Object *external_object);
 	void store_obj(string store_name, Object *obj);
 	void store_lit(string store_name, string *lit);
 	void store_exe(string store_name, ASTNode *exe);
@@ -96,7 +98,7 @@ public:
 	Object *clone_callable(ASTNode *sender);
 private:
 	int hash;
-	Object *prototype;
+	Object *prototype, *external;
 	map<string, Store *> stores;
 	Context *context;
 

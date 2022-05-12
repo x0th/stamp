@@ -104,7 +104,7 @@ ASTNode *parse_program() {
 		cerr << msg;
 		return nullptr;
 	}
-	
+
 	return s;
 }
 
@@ -139,10 +139,7 @@ void parse_statement_list(ASTNode *s) {
 				parse_statement_list(s);
 			return;
 		case TokSListBegin:
-			st = parse_program();
-			if (st) {
-				s->get_children().push_back(st);
-			}
+			next_token();
 			parse_statement_list(s);
 			return;
 		case TokSListEnd:
@@ -519,6 +516,11 @@ ASTNode *parse_if_tail() {
 		case TokIf:
 		case TokObject:
 		case TokValue:
+		case TokInt:
+		case TokString:
+		case TokChar:
+		case TokWhile:
+		case TokSListEnd:
 			return nullptr;
 		case TokEOF:
 			if (request_line())

@@ -29,11 +29,11 @@ public:
 	string to_string() { return to_string_indent(""); };
 
 	string visit();
-	Object *visit_statement(string *out, Context *context, bool *should_return);
+	Object *visit_statement(string *out, Context *context, bool *should_return, Object *external_object);
 	Object *visit_object(string *out, Context *context);
 	Message visit_message();
-	Object *visit_send(string *out, Context *context, bool *should_return);
-	Object *visit_store(Context *context);
+	Object *visit_send(string *out, Context *context, bool *should_return, Object *external_object);
+	Object *visit_store(Context *context, Object *external_object);
 private:
 	vector<ASTNode *> children;
 
