@@ -7,9 +7,10 @@
 #include <iostream>
 #include <fstream>
 
-#include "context.h"
+//#include "context.h"
 #include "parser.h"
-#include "ast.h"
+#include "AST.h"
+#include "Generator.h"
 
 using namespace std;
 
@@ -30,10 +31,10 @@ void interpret_cmdline() {
 		cout << ast->to_string();
 #endif
 
-		cout << ast->visit() << "\n";
+		//cout << ast->visit() << "\n";
 
 #ifdef DEBUG
-		global_context->dump();
+		//global_context->dump();
 #endif
 	}
 }
@@ -56,22 +57,28 @@ void interpret_file(string filename) {
 	if (!ast)
 		return;
 
+	std::cout << ast->to_string();
+
+	Generator generator;
+	ast->generate_bytecode(generator);
+	generator.dump();
+
 	#ifdef DEBUG
-		cout << ast->to_string();
+		//cout << ast->to_string();
 	#endif
 
-	cout << ast->visit() << "\n";
+	// cout << ast->visit() << "\n";
 
 #ifdef DEBUG
-	global_context->dump();
+	//global_context->dump();
 #endif
 }
 
 int main(int argc, char *argv[]) {
-	initialize_global_context();
+	//initialize_global_context();
 
 #ifdef DEBUG
-	global_context->dump();
+	//global_context->dump();
 #endif
 
 	if (argc > 1)
