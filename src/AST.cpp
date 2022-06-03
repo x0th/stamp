@@ -28,8 +28,14 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 
 	switch (token.type) {
 		case TokSList: {
-			for (auto const c: children) {
+			generator.add_basic_block();
+			for (long unsigned int i = 0; i < children.size(); i++) {
+				auto c = children[i];
 				c->generate_bytecode(generator);
+
+				// child was a beginning of the scope it's not the last one of the children
+				if (c->token.type == TokSList && i != children.size() - 1)
+					generator.add_basic_block();
 			}
 			break;
 		}
@@ -67,7 +73,6 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			return dst;
 		}
 		ENUMERATE_BASIC_OBJECTS(__GENERATE_BASIC_OBJECT)
-		//ENUMERATE_BASIC_OBJECT(__GENERATE_BASIC_OBJECT)
 		default: {
 			// FIXME: Error!
 		}

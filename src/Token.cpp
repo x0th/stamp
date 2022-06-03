@@ -5,45 +5,21 @@
  */
 
 #include <string>
-#include <iostream>
 
-#include "token.h"
+#include "Token.h"
 
-using namespace std;
 
-string token_str(Token *token) {
-	string s = "";
+std::string token_str(Token *token) {
+	std::string s = "";
 	switch (token->type) {
-#define tok_str(type) case type: s += #type; break;
-		tok_str(TokObject)
-		tok_str(TokMessage)
-		tok_str(TokSend)
-		tok_str(TokStore)
-		tok_str(TokValue)
-		tok_str(TokEOF)
-		tok_str(TokStatementEnd)
-		tok_str(TokSList)
-		tok_str(TokSListBegin)
-		tok_str(TokSListEnd)
-		tok_str(TokOpenParend)
-		tok_str(TokCloseParend)
-		tok_str(TokComa)
-		tok_str(TokFn)
-		tok_str(TokIf)
-		tok_str(TokElse)
-		tok_str(TokInt)
-		tok_str(TokChar)
-		tok_str(TokString)
-		tok_str(TokSqBracketL)
-		tok_str(TokSqBracketR)
-		tok_str(TokList)
-		tok_str(TokWhile)
-#undef tok_str
+#define __TOK_STR(type) case type: s += #type; break;
+		ENUMERATE_TOKENS(__TOK_STR)
+#undef __TOK_STR
 	}
 	return s + "(" + token->value + ")";
 }
 
-string token_readable(Token *token) {
+std::string token_readable(Token *token) {
 	switch (token->type) {
 		case TokObject:
 		case TokMessage:

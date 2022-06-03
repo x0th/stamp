@@ -10,8 +10,8 @@
 #include <cstring>
 #include <cctype>
 
-#include "lexer.h"
-#include "token.h"
+#include "Lexer.h"
+#include "Token.h"
 #include "Parser.h"
 
 using namespace std;

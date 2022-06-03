@@ -10,22 +10,27 @@
 #include <vector>
 
 #include "Instruction.h"
+#include "BasicBlock.h"
 
 class Generator {
 public:
 	Generator() {}
-	~Generator();
+	~Generator() = default;
 
 	Register next_register();
 
+	uint32_t add_basic_block();
+
 	void dump();
+	void dump_basic_blocks();
 
 	template<class T, typename... Args>
 	void append(Args&&... args) {
-		instructions.push_back(static_cast<Instruction*>(new T(std::forward<Args>(args)...)));
+		basic_blocks[basic_blocks.size() - 1].add_instruction(static_cast<Instruction*>(new T(std::forward<Args>(args)...)));
 	}
 private:
 	uint32_t register_number = { 0 };
+	uint32_t num_basic_blocks = { 0 };
 
-	std::vector<Instruction*> instructions;
+	std::vector<BasicBlock> basic_blocks;
 };

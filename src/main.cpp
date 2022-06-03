@@ -61,7 +61,7 @@ void interpret_file(string filename) {
 
 	Generator generator;
 	ast->generate_bytecode(generator);
-	generator.dump();
+	generator.dump_basic_blocks();
 
 	#ifdef DEBUG
 		//cout << ast->to_string();

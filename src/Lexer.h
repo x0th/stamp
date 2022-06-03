@@ -8,7 +8,7 @@
 
 #include <string>
 
-#include "token.h"
+#include "Token.h"
 
 static const int MAX_TOKEN_LEN = 128;
 

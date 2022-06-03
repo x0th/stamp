@@ -5,7 +5,7 @@
  */
 
 #include "Parser.h"
-#include "lexer.h"
+#include "Lexer.h"
 //#include "context.h"
 
 #include <iostream>
@@ -129,10 +129,15 @@ void parse_statement_list(ASTNode *s) {
 			if (request_line())
 				parse_statement_list(s);
 			return;
-		case TokSListBegin:
+		case TokSListBegin: {
+			ASTNode *new_slist = new ASTNode(Token { type: TokSList, value: "" });
 			next_token();
+			parse_statement_list(new_slist);
+			if (new_slist)
+				s->get_children().push_back(new_slist);
 			parse_statement_list(s);
 			return;
+		}
 		case TokSListEnd:
 			next_token();
 			return;

@@ -9,17 +9,21 @@
 #include "Generator.h"
 #include "Register.h"
 
-Generator::~Generator() {
-	for (auto i : instructions) {
-		i->dealloc();
-	}
-}
-
 Register Generator::next_register() {
 	return Register(register_number++);
 }
 
+uint32_t Generator::add_basic_block() {
+	basic_blocks.push_back(BasicBlock(num_basic_blocks++));
+	return num_basic_blocks - 1;
+}
+
 void Generator::dump() {
-	for (auto const &i : instructions)
-		std::cout << i->to_string() << "\n";
+	for (auto const &bb : basic_blocks)
+		std::cout << bb.to_string();
+}
+
+void Generator::dump_basic_blocks() {
+	for (auto const &bb : basic_blocks)
+		bb.dump();
 }
