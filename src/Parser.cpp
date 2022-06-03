@@ -4,9 +4,9 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
-#include "parser.h"
+#include "Parser.h"
 #include "lexer.h"
-#include "context.h"
+//#include "context.h"
 
 #include <iostream>
 #include <utility>
@@ -44,15 +44,6 @@ ASTNode *parse_list(ASTNode *list);
 	children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));                                \
 	children[1]->get_children().push_back(object);                                                              \
 	auto cloned = new ASTNode(Token { type: TokSend, value: "" }, children);                                    \
-
-#define create_basic_obj(token_name, obj_name)                                                                  \
-	auto object = new ASTNode(Token { type: TokValue, value: tok.value });                                      \
-	clone_obj(obj_name)                                                                                         \
-	vector<ASTNode *> value_children;                                                                           \
-	value_children.push_back(cloned);                                                                           \
-	value_children.push_back(new ASTNode(Token { type: TokMessage, value: "store_value" }));                    \
-	value_children[1]->get_children().push_back(new ASTNode(Token { type: token_name, value: tok.value }));     \
-	ASTNode *out = new ASTNode(Token { type: TokSend, value: "" }, value_children);                             \
 
 string error_msg(string error) {
 	string out;
@@ -151,22 +142,25 @@ void parse_statement_list(ASTNode *s) {
 }
 
 bool is_operator(string &s) {
-	auto lst = global_context->get("Operators")->get_obj()->get_stores()["table"]->get_obj()->get_stores()["value"]->get_list();
-
-	for (long unsigned int i = 0; i < lst->size(); i++) {
-		auto p = (*lst)[i]->get_list();
-		for (auto op : *p) {
-			if (*op->get_lit() == s) {
-				return true;
-			}
-		}
-	}
+//	auto lst = global_context->get("Operators")->get_obj()->get_stores()["table"]->get_obj()->get_stores()["value"]->get_list();
+//
+//	for (long unsigned int i = 0; i < lst->size(); i++) {
+//		auto p = (*lst)[i]->get_list();
+//		for (auto op : *p) {
+//			if (*op->get_lit() == s) {
+//				return true;
+//			}
+//		}
+//	}
 
 	return false;
 }
 
 ASTNode *parse_statement() {
 	switch (tok.type) {
+		case TokInt:
+		case TokChar:
+		case TokString:
 		case TokObject: {
 			auto object = new ASTNode(tok);
 			next_token(); // obj
@@ -182,26 +176,11 @@ ASTNode *parse_statement() {
 			next_token(); // obj
 			return parse_statement_tail(object);
 		}
-		case TokInt: {
-			create_basic_obj(TokInt, "Int");
-			next_token();
-			return parse_statement_tail(out);
-		}
-		case TokChar: {
-			create_basic_obj(TokChar, "Char");
-			next_token();
-			return parse_statement_tail(out);
-		}
-		case TokString: {
-			create_basic_obj(TokString, "String");
-			next_token();
-			return parse_statement_tail(out);
-		}
-		case TokSqBracketL: {
-			create_basic_obj(TokList, "List");
-			next_token(); // [
-			return parse_message_tail(parse_list(out));
-		}
+//		case TokSqBracketL: {
+//			create_basic_obj(TokList, "List");
+//			next_token(); // [
+//			return parse_message_tail(parse_list(out));
+//		}
 		case TokFn: {
 			next_token(); // fn
 			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
@@ -344,6 +323,9 @@ ASTNode *parse_rhs(ASTNode *object) {
 
 ASTNode *parse_statement_rhs() {
 	switch (tok.type) {
+		case TokInt:
+		case TokChar:
+		case TokSqBracketL:
 		case TokObject: {
 			auto object = new ASTNode(tok);
 			next_token(); // obj
@@ -354,26 +336,11 @@ ASTNode *parse_statement_rhs() {
 			next_token(); // obj
 			return parse_message_tail(object);
 		}
-		case TokInt: {
-			create_basic_obj(TokInt, "Int");
-			next_token();
-			return parse_message_tail(out);
-		}
-		case TokChar: {
-			create_basic_obj(TokChar, "Char");
-			next_token();
-			return parse_message_tail(out);
-		}
-		case TokString: {
-			create_basic_obj(TokString, "String");
-			next_token();
-			return parse_message_tail(out);
-		}
-		case TokSqBracketL: {
-			create_basic_obj(TokList, "List");
-			next_token(); // [
-			return parse_message_tail(parse_list(out));
-		}
+//		case TokSqBracketL: {
+//			create_basic_obj(TokList, "List");
+//			next_token(); // [
+//			return parse_message_tail(parse_list(out));
+//		}
 		case TokCloseParend:
 			return nullptr;
 		default:
@@ -573,58 +540,43 @@ ASTNode *parse_while() {
 }
 
 inline bool swap_precedence(string &old_operator, string &new_operator) {
-	int precedence_old = -1, precedence_new = -1;
-	auto lst = global_context->get("Operators")->get_obj()->get_stores()["table"]->get_obj()->get_stores()["value"]->get_list();
-
-	for (long unsigned int i = 0; i < lst->size(); i++) {
-		auto p = (*lst)[i]->get_list();
-		for (auto op : *p) {
-			if (*op->get_lit() == old_operator) {
-				precedence_old = i;
-			}
-			if (*op->get_lit() == new_operator) {
-				precedence_new = i;
-			}
-		}
-	}
-
-	if (precedence_old <= precedence_new)
-		return false;
+//	int precedence_old = -1, precedence_new = -1;
+//	auto lst = global_context->get("Operators")->get_obj()->get_stores()["table"]->get_obj()->get_stores()["value"]->get_list();
+//
+//	for (long unsigned int i = 0; i < lst->size(); i++) {
+//		auto p = (*lst)[i]->get_list();
+//		for (auto op : *p) {
+//			if (*op->get_lit() == old_operator) {
+//				precedence_old = i;
+//			}
+//			if (*op->get_lit() == new_operator) {
+//				precedence_new = i;
+//			}
+//		}
+//	}
+//
+//	if (precedence_old <= precedence_new)
+//		return false;
 	return true;
 }
 
 ASTNode *parse_message_tail(ASTNode *previous_message) {
 	switch (tok.type) {
+		case TokInt:
+		case TokChar:
+		case TokString:
 		case TokObject:
 		case TokValue: {
 			previous_message->get_children()[1]->get_children().push_back(new ASTNode(tok));
 			next_token();
 			return parse_message_tail(previous_message);
 		}
-		case TokInt: {
-			create_basic_obj(TokInt, "Int");
-			previous_message->get_children()[1]->get_children().push_back(out);
-			next_token();
-			return parse_message_tail(previous_message);
-		}
-		case TokChar: {
-			create_basic_obj(TokChar, "Char");
-			previous_message->get_children()[1]->get_children().push_back(out);
-			next_token();
-			return parse_message_tail(previous_message);
-		}
-		case TokString: {
-			create_basic_obj(TokString, "String");
-			previous_message->get_children()[1]->get_children().push_back(out);
-			next_token();
-			return parse_message_tail(previous_message);
-		}
-		case TokSqBracketL: {
-			create_basic_obj(TokList, "List");
-			next_token(); // [
-			parse_list(out);
-			return parse_message_tail(out);
-		}
+//		case TokSqBracketL: {
+//			create_basic_obj(TokList, "List");
+//			next_token(); // [
+//			parse_list(out);
+//			return parse_message_tail(out);
+//		}
 		case TokMessage: {
 			vector<ASTNode *> children;
 			children.push_back(previous_message);
@@ -632,13 +584,13 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 			next_token();
 			auto next_message =  parse_message_tail(new ASTNode(Token { type: TokSend, value: "" }, children));
 			// Change order of messages based on precedence
-			if (previous_message->token.type && swap_precedence(previous_message->get_children()[1]->token.value, children[1]->token.value)) {
-				auto prev = previous_message->get_children()[1];
-				auto new_send = new ASTNode(Token { type: TokSend, value: "" }, vector<ASTNode *>{prev->get_children()[0], children[1]});
-				prev->get_children()[0] = new_send;
-				// FIXME: memory leak of the TokSend passed to parse_message_tail_above ?
-				return children[0];
-			}
+//			if (previous_message->token.type && swap_precedence(previous_message->get_children()[1]->token.value, children[1]->token.value)) {
+//				auto prev = previous_message->get_children()[1];
+//				auto new_send = new ASTNode(Token { type: TokSend, value: "" }, vector<ASTNode *>{prev->get_children()[0], children[1]});
+//				prev->get_children()[0] = new_send;
+//				// FIXME: memory leak of the TokSend passed to parse_message_tail_above ?
+//				return children[0];
+//			}
 			return next_message;
 		}
 		case TokOpenParend: {

@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "ast.h"
+#include "AST.h"
 
-ASTNode *parse(string&, vector<string>&);
-string error_msg(string error);
+ASTNode *parse(std::string&, std::vector<std::string>&);
+std::string error_msg(std::string error);

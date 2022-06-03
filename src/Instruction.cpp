@@ -48,6 +48,14 @@ std::string Load::to_string() const {
 std::string Send::to_string() const {
 	std::stringstream s;
 	s << "Send r" << dst.get_index() << ", r" << obj.get_index() << ", " << msg;
+	if (stamp.has_value()) {
+		s << ", ";
+		auto *str = std::get_if<std::string>(&*stamp);
+		if (str)
+			s << *str;
+		else
+			s << "r" << std::get<Register>(*stamp).get_index();
+	}
 	return s.str();
 }
 

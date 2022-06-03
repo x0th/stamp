@@ -17,6 +17,11 @@
 
 class Context;
 
+#define ENUMERATE_BASIC_OBJECTS(O)\
+	O(TokInt, "Int")                \
+	O(TokChar, "Char")              \
+	O(TokString, "String")
+
 class ASTNode {
 public:
 	ASTNode(Token token) : token(token) {}

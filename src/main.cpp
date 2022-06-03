@@ -8,7 +8,7 @@
 #include <fstream>
 
 //#include "context.h"
-#include "parser.h"
+#include "Parser.h"
 #include "AST.h"
 #include "Generator.h"
 

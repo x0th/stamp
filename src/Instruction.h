@@ -7,6 +7,8 @@
 #pragma once
 
 #include <string>
+#include <variant>
+#include <optional>
 
 #include "Register.h"
 
@@ -46,18 +48,21 @@ private:
 
 class Send final : public Instruction {
 public:
-	Send(Register dst, Register obj, std::string msg) : Instruction(Type::Send), dst(dst), obj(obj), msg(msg) {}
+	Send(Register dst, Register obj, std::string msg, std::optional<std::variant<Register, std::string>> stamp) :
+		Instruction(Type::Send), dst(dst), obj(obj), msg(msg), stamp(stamp) {}
 
 	std::string to_string() const;
 private:
 	Register dst;
 	Register obj;
 	std::string msg;
+	std::optional<std::variant<Register, std::string>> stamp;
 };
 
 class Store final : public Instruction {
 public:
-	Store(Register obj, std::string store_name, Register store) : Instruction(Type::Store), obj(obj), store_name(store_name), store(store) {}
+	Store(Register obj, std::string store_name, Register store) :
+		Instruction(Type::Store), obj(obj), store_name(store_name), store(store) {}
 
 	std::string to_string() const;
 private:

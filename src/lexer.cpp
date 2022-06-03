@@ -12,7 +12,7 @@
 
 #include "lexer.h"
 #include "token.h"
-#include "parser.h"
+#include "Parser.h"
 
 using namespace std;
 
