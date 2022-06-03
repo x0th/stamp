@@ -28,7 +28,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 
 	switch (token.type) {
 		case TokSList: {
-			generator.add_basic_block();
+			auto this_scope = generator.add_scope_beginning(0);
 			for (long unsigned int i = 0; i < children.size(); i++) {
 				auto c = children[i];
 				c->generate_bytecode(generator);
@@ -37,6 +37,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 				if (c->token.type == TokSList && i != children.size() - 1)
 					generator.add_basic_block();
 			}
+			generator.end_scope(this_scope);
 			break;
 		}
 		case TokStore: {

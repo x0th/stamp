@@ -20,6 +20,8 @@ public:
 	std::string to_string() const;
 	void dump() const;
 
+	uint32_t get_index() const { return index; }
+
 	void add_instruction(Instruction *instruction) { instructions.push_back(instruction); }
 private:
 	uint32_t index;

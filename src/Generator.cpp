@@ -13,9 +13,18 @@ Register Generator::next_register() {
 	return Register(register_number++);
 }
 
-uint32_t Generator::add_basic_block() {
-	basic_blocks.push_back(BasicBlock(num_basic_blocks++));
-	return num_basic_blocks - 1;
+BasicBlock &Generator::add_basic_block() {
+	basic_blocks.push_back(BasicBlock(num_basic_blocks));
+	return basic_blocks[num_basic_blocks++];
+}
+
+uint32_t Generator::add_scope_beginning(uint32_t flags) {
+	scopes.push_back(LexicalScope(add_basic_block().get_index(), flags));
+	return num_scopes++;
+}
+
+void Generator::end_scope(uint32_t scope_id) {
+	scopes[scope_id].end_scope(basic_blocks[num_basic_blocks - 1].get_index());
 }
 
 void Generator::dump() {
@@ -26,4 +35,10 @@ void Generator::dump() {
 void Generator::dump_basic_blocks() {
 	for (auto const &bb : basic_blocks)
 		bb.dump();
+}
+
+void Generator::dump_scopes() {
+	std::cout << "Lexical scopes:\n";
+	for (auto const &scope : scopes)
+		std::cout << scope.to_string() << "\n";
 }
