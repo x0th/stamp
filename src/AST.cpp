@@ -40,6 +40,18 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			generator.end_scope(this_scope);
 			break;
 		}
+		case TokIf: {
+			auto condition = children[0]->generate_bytecode(generator);
+			auto ji = generator.append<JumpFalse>(*condition);
+			auto true_condition = children[1]->generate_bytecode(generator);
+			if (children.size() == 3) {
+				ji->set_jump(generator.get_num_bbs());
+				children[2]->generate_bytecode(generator);
+			} else {
+				ji->set_jump(generator.add_basic_block().get_index());
+			}
+			return true_condition;
+		}
 		case TokStore: {
 			auto obj = children[0]->generate_bytecode(generator);
 			if (!obj.has_value()) {

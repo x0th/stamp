@@ -451,28 +451,18 @@ ASTNode *parse_next_param(ASTNode *so_far) {
 ASTNode *parse_if() {
 	switch (tok.type) {
 		case TokIf: {
-			match(TokOpenParend); // (
-			next_token(); // obj
+			auto if_ast = new ASTNode(tok);
+			next_token();
 			auto full_param = parse_statement_rhs();
 			auto true_branch = parse_program();
 			auto false_branch = parse_if_tail();
 
-			vector<ASTNode *> children;
-			children.push_back(new ASTNode(Token { type: TokObject, value: "if" }));
-			
-			vector<ASTNode *> list_children;
-			list_children.push_back(full_param);
-			list_children.push_back(true_branch);
+			if_ast->get_children().push_back(full_param);
+			if_ast->get_children().push_back(true_branch);
 			if (false_branch)
-				list_children.push_back(false_branch);
-			else
-				list_children.push_back(new ASTNode(Token { type: TokSList, value: "" }));
-			
-			auto msg = new ASTNode(Token { type: TokMessage, value: "if_true" });
-			msg->get_children().push_back(new ASTNode(Token { type: TokSList, value: "" }, list_children));
-			
-			children.push_back(msg);
-			return new ASTNode(Token { type: TokSend, value: "" }, children);
+				if_ast->get_children().push_back(false_branch);
+
+			return if_ast;
 		}
 		default:
 			throw error_msg("Expected if. Found: " + token_readable(&tok) + ".");
@@ -618,7 +608,7 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 		case TokSqBracketR:
 			return previous_message;
 		case TokSListBegin:
-			previous_message->get_children()[1]->get_children().push_back(parse_program());
+		//	previous_message->get_children()[1]->get_children().push_back(parse_program());
 			return previous_message;
 		default:
 			throw error_msg("Expected Object, value, message, (, ), ;, }, EOF or ,. Found: " + token_readable(&tok) + ".");

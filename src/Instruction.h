@@ -15,7 +15,9 @@
 #define ENUMERATE_INSTRUCTION_TYPES(T)       \
 	T(Send)                                  \
 	T(Load)                                  \
-	T(Store)
+	T(Store)                                 \
+	T(JumpTrue)                              \
+	T(JumpFalse)
 
 class Instruction {
 public:
@@ -69,4 +71,30 @@ private:
 	Register obj;
 	std::string store_name;
 	Register store;
+};
+
+class JumpTrue final : public Instruction {
+public:
+	JumpTrue(uint32_t block_index, Register condition) : Instruction(Type::JumpTrue), block_index(block_index), condition(condition) {}
+	JumpTrue(Register condition) : Instruction(Type::JumpTrue), block_index(0), condition(condition) {}
+
+	void set_jump(uint32_t jump_location) { block_index = jump_location; }
+
+	std::string to_string() const;
+private:
+	uint32_t block_index;
+	Register condition;
+};
+
+class JumpFalse final : public Instruction {
+public:
+	JumpFalse(uint32_t block_index, Register condition) : Instruction(Type::JumpFalse), block_index(block_index), condition(condition) {}
+	JumpFalse(Register condition) : Instruction(Type::JumpFalse), block_index(0), condition(condition) {}
+
+	void set_jump(uint32_t jump_location) { block_index = jump_location; }
+
+	std::string to_string() const;
+private:
+	uint32_t block_index;
+	Register condition;
 };

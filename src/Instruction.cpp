@@ -64,3 +64,15 @@ std::string Store::to_string() const {
 	s << "Store r" << obj.get_index() << ", " << store_name << ", r" << store.get_index();
 	return s.str();
 }
+
+std::string JumpTrue::to_string() const {
+	std::stringstream s;
+	s << "JumpTrue r" << condition.get_index() << ", " << block_index;
+	return s.str();
+}
+
+std::string JumpFalse::to_string() const {
+	std::stringstream s;
+	s << "JumpFalse r" << condition.get_index() << ", " << block_index;
+	return s.str();
+}

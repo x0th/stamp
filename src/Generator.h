@@ -54,6 +54,7 @@ public:
 	BasicBlock &add_basic_block();
 
 	uint32_t add_scope_beginning(uint32_t flags);
+	uint32_t get_num_bbs() const { return num_basic_blocks; }
 	void end_scope(uint32_t scope_id);
 
 	void dump();
@@ -61,8 +62,10 @@ public:
 	void dump_scopes();
 
 	template<class T, typename... Args>
-	void append(Args&&... args) {
-		basic_blocks[basic_blocks.size() - 1].add_instruction(static_cast<Instruction*>(new T(std::forward<Args>(args)...)));
+	T *append(Args&&... args) {
+		auto inst = new T(std::forward<Args>(args)...);
+		basic_blocks[basic_blocks.size() - 1].add_instruction(static_cast<Instruction*>(inst));
+		return inst;
 	}
 private:
 	uint32_t register_number = { 0 };
