@@ -16,6 +16,7 @@
 	T(Send)                                  \
 	T(Load)                                  \
 	T(Store)                                 \
+    T(Jump)                                  \
 	T(JumpTrue)                              \
 	T(JumpFalse)
 
@@ -71,6 +72,15 @@ private:
 	Register obj;
 	std::string store_name;
 	Register store;
+};
+
+class Jump final : public Instruction {
+public:
+	Jump(uint32_t block_index) : Instruction(Type::Jump), block_index(block_index) {}
+
+	std::string to_string() const;
+private:
+	uint32_t block_index;
 };
 
 class JumpTrue final : public Instruction {

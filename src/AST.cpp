@@ -10,6 +10,8 @@
 #include "Generator.h"
 #include "Register.h"
 
+#define WHILE_SCOPE_FLAGS SCOPE_CAN_CONTINUE | SCOPE_CAN_BREAK
+
 std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 #define __GENERATE_BASIC_OBJECT(tok, lit)                                                        \
             case tok: {                                                                          \
@@ -27,17 +29,28 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 		}
 
 	switch (token.type) {
+		case TokProgram: {
+			auto scope = generator.add_scope_beginning(0);
+			token.type = TokSList;
+			generate_bytecode(generator);
+			generator.end_scope(scope);
+			break;
+		}
 		case TokSList: {
-			auto this_scope = generator.add_scope_beginning(0);
 			for (long unsigned int i = 0; i < children.size(); i++) {
 				auto c = children[i];
-				c->generate_bytecode(generator);
+				if (c->token.type == TokSList) {
+					auto scope = generator.add_scope_beginning_current_bb(0);
+					c->generate_bytecode(generator);
+					generator.end_scope(scope);
 
-				// child was a beginning of the scope it's not the last one of the children
-				if (c->token.type == TokSList && i != children.size() - 1)
-					generator.add_basic_block();
+					// child was a beginning of the scope it's not the last one of the children
+					if (i != children.size() - 1)
+						generator.add_basic_block();
+				} else {
+					c->generate_bytecode(generator);
+				}
 			}
-			generator.end_scope(this_scope);
 			break;
 		}
 		case TokIf: {
@@ -51,6 +64,17 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 				ji->set_jump(generator.add_basic_block().get_index());
 			}
 			return true_condition;
+		}
+		case TokWhile: {
+			auto condition_bb = generator.add_basic_block();
+			auto condition = children[0]->generate_bytecode(generator);
+			auto ji = generator.append<JumpFalse>(*condition);
+			auto body_scope = generator.add_scope_beginning(WHILE_SCOPE_FLAGS);
+			auto body = children[1]->generate_bytecode(generator);
+			generator.append<Jump>(condition_bb.get_index());
+			generator.end_scope(body_scope);
+			ji->set_jump(generator.add_basic_block().get_index());
+			return body;
 		}
 		case TokStore: {
 			auto obj = children[0]->generate_bytecode(generator);

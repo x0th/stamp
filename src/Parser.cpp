@@ -87,7 +87,7 @@ bool request_line() {
 }
 
 ASTNode *parse_program() {
-	ASTNode *s = new ASTNode(Token { type: TokSList, value: "" });
+	ASTNode *s = new ASTNode(Token { type: TokProgram, value: "" });
 	try {
 		next_token();
 		parse_statement_list(s);
@@ -454,7 +454,9 @@ ASTNode *parse_if() {
 			auto if_ast = new ASTNode(tok);
 			next_token();
 			auto full_param = parse_statement_rhs();
-			auto true_branch = parse_program();
+			next_token();
+			auto true_branch = new ASTNode(Token { type: TokSList, value: "" });
+			parse_statement_list(true_branch);
 			auto false_branch = parse_if_tail();
 
 			if_ast->get_children().push_back(full_param);
@@ -497,8 +499,11 @@ ASTNode *parse_else_tail() {
 	switch (tok.type) {
 		case TokIf:
 			return parse_if();
-		case TokSListBegin:
-			return parse_program();
+		case TokSListBegin: {
+			auto body = new ASTNode(Token{type: TokSList, value: ""});
+			parse_statement_list(body);
+			return body;
+		}
 		case TokEOF:
 			if (request_line())
 				return parse_else_tail();
@@ -511,23 +516,17 @@ ASTNode *parse_else_tail() {
 ASTNode *parse_while() {
 	switch (tok.type) {
 		case TokWhile: {
-			match(TokOpenParend); // (
-			next_token(); // obj
+			auto while_ast = new ASTNode(tok);
+			next_token();
 			auto full_param = parse_statement_rhs();
-			auto body = parse_program();
+			next_token();
+			auto body = new ASTNode(Token { type: TokSList, value: "" });
+			parse_statement_list(body);
 
-			vector<ASTNode *> children;
-			children.push_back(new ASTNode(Token { type: TokObject, value: "while" }));
+			while_ast->get_children().push_back(full_param);
+			while_ast->get_children().push_back(body);
 
-			vector<ASTNode *> list_children;
-			list_children.push_back(full_param);
-			list_children.push_back(body);
-
-			auto msg = new ASTNode(Token { type: TokMessage, value: "exec_while_true" });
-			msg->get_children().push_back(new ASTNode(Token { type: TokSList, value: "" }, list_children));
-
-			children.push_back(msg);
-			return new ASTNode(Token { type: TokSend, value: "" }, children);
+			return while_ast;
 		}
 		default:
 			throw error_msg("Expected while. Found: " + token_readable(&tok) + ".");

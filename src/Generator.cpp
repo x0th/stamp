@@ -23,6 +23,11 @@ uint32_t Generator::add_scope_beginning(uint32_t flags) {
 	return num_scopes++;
 }
 
+uint32_t Generator::add_scope_beginning_current_bb(uint32_t flags) {
+	scopes.push_back(LexicalScope(basic_blocks[num_basic_blocks - 1].get_index(), flags));
+	return num_scopes++;
+}
+
 void Generator::end_scope(uint32_t scope_id) {
 	scopes[scope_id].end_scope(basic_blocks[num_basic_blocks - 1].get_index());
 }

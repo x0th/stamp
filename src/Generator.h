@@ -20,8 +20,8 @@ class LexicalScope {
 public:
 	LexicalScope(int32_t scope_beginning, int32_t flags) : scope_beginning(scope_beginning), scope_end(-1) {
 		can_continue = flags & 0b1;
-		can_break = flags & 0b10;
-		can_continue = flags & 0b100;
+		can_break = (flags & 0b10) >> 1;
+		can_return = (flags & 0b100) >> 2;
 	}
 	~LexicalScope() = default;
 
@@ -54,6 +54,7 @@ public:
 	BasicBlock &add_basic_block();
 
 	uint32_t add_scope_beginning(uint32_t flags);
+	uint32_t add_scope_beginning_current_bb(uint32_t flags);
 	uint32_t get_num_bbs() const { return num_basic_blocks; }
 	void end_scope(uint32_t scope_id);
 

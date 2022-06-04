@@ -65,14 +65,20 @@ std::string Store::to_string() const {
 	return s.str();
 }
 
+std::string Jump::to_string() const {
+	std::stringstream s;
+	s << "Jump BB" << block_index;
+	return s.str();
+}
+
 std::string JumpTrue::to_string() const {
 	std::stringstream s;
-	s << "JumpTrue r" << condition.get_index() << ", " << block_index;
+	s << "JumpTrue r" << condition.get_index() << ", BB" << block_index;
 	return s.str();
 }
 
 std::string JumpFalse::to_string() const {
 	std::stringstream s;
-	s << "JumpFalse r" << condition.get_index() << ", " << block_index;
+	s << "JumpFalse r" << condition.get_index() << ", BB" << block_index;
 	return s.str();
 }

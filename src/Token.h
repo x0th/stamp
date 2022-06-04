@@ -31,7 +31,8 @@
 	T(TokSqBracketL) \
 	T(TokSqBracketR) \
 	T(TokList) \
-	T(TokWhile)
+	T(TokWhile) \
+	T(TokProgram)
 
 enum TokenType {
 #define __DEFINE_TOKEN_TYPES(t) \

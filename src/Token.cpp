@@ -44,6 +44,7 @@ std::string token_readable(Token *token) {
 		case TokSqBracketL: return "[";
 		case TokSqBracketR: return "]";
 		case TokWhile: return "while";
+		case TokProgram: return "Program";
 	}
 	return "";
 }
