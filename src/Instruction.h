@@ -9,6 +9,7 @@
 #include <string>
 #include <variant>
 #include <optional>
+#include <cinttypes>
 
 #include "Register.h"
 
@@ -51,15 +52,26 @@ private:
 
 class Send final : public Instruction {
 public:
-	Send(Register dst, Register obj, std::string msg, std::optional<std::variant<Register, std::string>> stamp) :
-		Instruction(Type::Send), dst(dst), obj(obj), msg(msg), stamp(stamp) {}
+	Send(Register dst, Register obj, std::string msg, std::optional<Register> st) : Instruction(Type::Send), dst(dst), obj(obj), msg(msg) {
+		if (st)
+			stamp = *st;
+	}
+	Send(Register dst, Register obj, std::string msg, std::optional<std::string> st) : Instruction(Type::Send), dst(dst), obj(obj), msg(msg) {
+		if (st)
+			stamp = *st;
+	}
+	Send(Register dst, Register obj, std::string msg, std::optional<uint32_t> st) : Instruction(Type::Send), dst(dst), obj(obj), msg(msg) {
+		if (st)
+			stamp = *st;
+	}
+	Send(const Send& other) : Instruction(Type::Send), dst(other.dst), obj(other.obj), msg(other.msg), stamp(other.stamp) {}
 
 	std::string to_string() const;
 private:
 	Register dst;
 	Register obj;
 	std::string msg;
-	std::optional<std::variant<Register, std::string>> stamp;
+	std::optional<std::variant<Register, std::string, uint32_t>> stamp;
 };
 
 class Store final : public Instruction {

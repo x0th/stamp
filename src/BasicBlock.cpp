@@ -10,7 +10,7 @@ BasicBlock::~BasicBlock() {
 
 std::string BasicBlock::to_string() const {
 	std::string out;
-	for (auto const &i : instructions)
+	for (auto i : instructions)
 		out += i->to_string() + "\n";
 	return out;
 }

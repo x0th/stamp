@@ -6,10 +6,8 @@
 
 #include "Parser.h"
 #include "Lexer.h"
-//#include "context.h"
 
 #include <iostream>
-#include <utility>
 
 using namespace std;
 
@@ -187,11 +185,11 @@ ASTNode *parse_statement() {
 //			return parse_message_tail(parse_list(out));
 //		}
 		case TokFn: {
+			auto fn = new ASTNode(tok);
 			next_token(); // fn
-			auto object = new ASTNode(Token { type: TokValue, value: tok.value });
-			clone_obj("Callable");
-			next_token(); // fn_name
-			return parse_function_tail(cloned);
+			fn->get_children().push_back(new ASTNode(tok));
+			next_token(); // function name
+			return parse_function_tail(fn);
 		}
 		case TokIf: {
 			return parse_if();
@@ -220,13 +218,13 @@ ASTNode *parse_function_tail(ASTNode *function) {
 	switch(tok.type) {
 		case TokOpenParend: {
 			next_token(); // (
-			vector<ASTNode *> children;
-			children.push_back(parse_function_signature(function));
+			parse_function_signature(function);
 			next_token(); // )
-			vector<ASTNode *> msg_children;
-			msg_children.push_back(parse_program());
-			children.push_back(new ASTNode(Token { type: TokMessage, value: "store_body" }, msg_children));
-			return new ASTNode(Token { type: TokSend, value: "" }, children);
+			next_token(); // {
+			auto body = new ASTNode(Token { type: TokSList, value: "" });
+			parse_statement_list(body);
+			function->get_children().push_back(body);
+			return function;
 		}
 		case TokEOF: {
 			if (request_line())
@@ -305,9 +303,10 @@ ASTNode *parse_list(ASTNode *list) {
 ASTNode *parse_rhs(ASTNode *object) {
 	switch(tok.type) {
 		case TokFn: {
-			next_token(); // fn
-			clone_obj("Callable");
-			return parse_function_tail(cloned);
+			auto fn = new ASTNode(tok);
+			next_token();
+			fn->get_children().push_back(object);
+			return parse_function_tail(fn);
 		}
 		case TokInt:
 		case TokObject:
@@ -354,8 +353,6 @@ ASTNode *parse_statement_rhs() {
 }
 
 ASTNode *parse_parameters(ASTNode *s) {
-	ASTNode *st;
-	ASTNode *further = s;
 	switch (tok.type) {
 		case TokCloseParend:
 			return s;
@@ -368,28 +365,20 @@ ASTNode *parse_parameters(ASTNode *s) {
 		case TokChar:
 		case TokString:
 		case TokSqBracketL:
-			st = parse_statement_rhs();
-			if (st) {
-				vector<ASTNode *> children;
-				children.push_back(s);
-				ASTNode *message = new ASTNode(Token { type: TokMessage, value: "pass_param" });
-				message->get_children().push_back(st);
-				children.push_back(message);
-				further = new ASTNode(Token { type: TokSend, value: "" }, children);
-			}
-			return parse_parameters(further);
-		case TokSListBegin: {
-			st = parse_program();
-			if (st) {
-				vector<ASTNode *> children;
-				children.push_back(s);
-				ASTNode *message = new ASTNode(Token { type: TokMessage, value: "pass_param" });
-				message->get_children().push_back(st);
-				children.push_back(message);
-				further = new ASTNode(Token { type: TokSend, value: "" }, children);	
-			}
-			return parse_parameters(further);
-		}
+			s->get_children().push_back(parse_statement_rhs());
+			return parse_parameters(s);
+//		case TokSListBegin: {
+//			st = parse_program();
+//			if (st) {
+//				vector<ASTNode *> children;
+//				children.push_back(s);
+//				ASTNode *message = new ASTNode(Token { type: TokMessage, value: "pass_param" });
+//				message->get_children().push_back(st);
+//				children.push_back(message);
+//				further = new ASTNode(Token { type: TokSend, value: "" }, children);
+//			}
+//			return parse_parameters(further);
+//		}
 		default:
 			throw error_msg("Expected Object, value, ) or ,. Found: " + token_readable(&tok) + ".");
 	}
@@ -401,13 +390,9 @@ ASTNode *parse_function_signature(ASTNode *function) {
 			return function;
 		case TokValue:
 		{
-			vector<ASTNode *> children;
-			children.push_back(function);
-			ASTNode *message = new ASTNode(Token { type: TokMessage, value: "store_param" });
-			message->get_children().push_back(new ASTNode(tok));
-			children.push_back(message);
+			function->get_children().push_back(new ASTNode(tok));
 			next_token();
-			return parse_param_type(new ASTNode(Token { type: TokSend, value: "" }, children));
+			return parse_param_type(function);
 		}
 		case TokEOF: {
 			if (request_line())
@@ -589,11 +574,11 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 		}
 		case TokOpenParend: {
 			next_token(); // (
-			vector<ASTNode *> children;
-			children.push_back(parse_parameters(previous_message));
-			children.push_back(new ASTNode(Token { type: TokMessage, value: "call" }));
+			auto fn_call = new ASTNode(Token { type: TokFnCall, value: "" });
+			fn_call->get_children().push_back(previous_message);
+			parse_parameters(fn_call);
 			next_token(); // )
-			return parse_message_tail(new ASTNode(Token { type: TokSend, value: "" }, children));
+			return fn_call;
 		}
 		case TokEOF: {
 			if (request_line())

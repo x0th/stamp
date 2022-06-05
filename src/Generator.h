@@ -51,7 +51,7 @@ public:
 
 	Register next_register();
 
-	BasicBlock &add_basic_block();
+	BasicBlock *add_basic_block();
 
 	uint32_t add_scope_beginning(uint32_t flags);
 	uint32_t add_scope_beginning_current_bb(uint32_t flags);
@@ -65,7 +65,7 @@ public:
 	template<class T, typename... Args>
 	T *append(Args&&... args) {
 		auto inst = new T(std::forward<Args>(args)...);
-		basic_blocks[basic_blocks.size() - 1].add_instruction(static_cast<Instruction*>(inst));
+		basic_blocks[basic_blocks.size() - 1]->add_instruction(static_cast<Instruction*>(inst));
 		return inst;
 	}
 private:
@@ -73,6 +73,6 @@ private:
 	uint32_t num_basic_blocks = { 0 };
 	uint32_t num_scopes = { 0 };
 
-	std::vector<BasicBlock> basic_blocks;
+	std::vector<BasicBlock*> basic_blocks;
 	std::vector<LexicalScope> scopes;
 };

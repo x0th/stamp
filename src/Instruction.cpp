@@ -53,8 +53,13 @@ std::string Send::to_string() const {
 		auto *str = std::get_if<std::string>(&*stamp);
 		if (str)
 			s << *str;
-		else
-			s << "r" << std::get<Register>(*stamp).get_index();
+		else {
+			auto *bb = std::get_if<uint32_t>(&*stamp);
+			if (bb)
+				s << "BB" << std::to_string(*bb);
+			else
+				s << "r" << std::get<Register>(*stamp).get_index();
+		}
 	}
 	return s.str();
 }
