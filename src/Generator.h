@@ -16,6 +16,9 @@
 #define SCOPE_CAN_BREAK     0b10
 #define SCOPE_CAN_RETURN    0b100
 
+class Instruction;
+class BasicBlock;
+
 class LexicalScope {
 public:
 	LexicalScope(int32_t scope_beginning, int32_t flags) : scope_beginning(scope_beginning), scope_end(-1) {
@@ -37,6 +40,9 @@ public:
 	}
 
 	void end_scope(uint32_t end) { scope_end = end; }
+
+	bool starts_at(uint32_t index) { return scope_beginning == (int32_t)index; }
+	bool ends_at(uint32_t index) { return scope_end == (int32_t)index; }
 private:
 	int32_t scope_beginning, scope_end;
 	bool can_continue = { false };
@@ -56,11 +62,16 @@ public:
 	uint32_t add_scope_beginning(uint32_t flags);
 	uint32_t add_scope_beginning_current_bb(uint32_t flags);
 	uint32_t get_num_bbs() const { return num_basic_blocks; }
+	std::vector<BasicBlock*> &get_bbs() { return basic_blocks; }
 	void end_scope(uint32_t scope_id);
 
 	void dump();
 	void dump_basic_blocks();
 	void dump_scopes();
+
+	LexicalScope *get_scope(uint32_t index) {
+		return &scopes[index];
+	}
 
 	template<class T, typename... Args>
 	T *append(Args&&... args) {

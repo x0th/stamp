@@ -12,6 +12,8 @@
 
 #include "Instruction.h"
 
+class Instruction;
+
 class BasicBlock {
 public:
 	BasicBlock(uint32_t index) : index(index) {}
@@ -21,6 +23,7 @@ public:
 	void dump() const;
 
 	uint32_t get_index() const { return index; }
+	std::vector<Instruction*> &get_instructions() { return instructions; }
 
 	void add_instruction(Instruction *instruction) { instructions.push_back(instruction); }
 private:

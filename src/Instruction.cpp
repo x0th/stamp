@@ -8,6 +8,47 @@
 #include <sstream>
 
 #include "Instruction.h"
+#include "Register.h"
+
+void Instruction::execute(Interpreter &interpreter) {
+#define __INSTRUCTION_TYPES(t)                          \
+		case Instruction::Type::t:                      \
+			static_cast<t&>(*this).execute(interpreter);         \
+			break;
+
+	switch(type) {
+		ENUMERATE_INSTRUCTION_TYPES(__INSTRUCTION_TYPES)
+		default:
+			// FIXME: Error!
+			break;
+	}
+
+#undef __INSTRUCTION_TYPES
+}
+
+void Load::execute(Interpreter &interpreter) {
+	interpreter.store_at(dst.get_index(), interpreter.fetch_object(value));
+}
+
+void Store::execute(Interpreter &interpreter) {
+
+}
+
+void Send::execute(Interpreter &interpreter) {
+
+}
+
+void Jump::execute(Interpreter &interpreter) {
+
+}
+
+void JumpTrue::execute(Interpreter &interpreter) {
+
+}
+
+void JumpFalse::execute(Interpreter &interpreter) {
+
+}
 
 void Instruction::dealloc() {
 #define __INSTRUCTION_TYPES(t)                          \

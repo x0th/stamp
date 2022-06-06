@@ -12,6 +12,9 @@
 #include <cinttypes>
 
 #include "Register.h"
+#include "Interpreter.h"
+
+class Interpreter;
 
 #define ENUMERATE_INSTRUCTION_TYPES(T)       \
 	T(Send)                                  \
@@ -36,6 +39,8 @@ public:
 	Type get_type() const { return type; }
 
 	std::string to_string() const;
+	// FIXME: should be error or void
+	void execute(Interpreter &interpreter);
 private:
 	Type type;
 };
@@ -45,6 +50,7 @@ public:
 	Load(Register dst, std::string value) : Instruction(Type::Load), dst(dst), value(value) {}
 
 	std::string to_string() const;
+	void execute(Interpreter &interpreter);
 private:
 	Register dst;
 	std::string value;
@@ -67,6 +73,7 @@ public:
 	Send(const Send& other) : Instruction(Type::Send), dst(other.dst), obj(other.obj), msg(other.msg), stamp(other.stamp) {}
 
 	std::string to_string() const;
+	void execute(Interpreter &interpreter);
 private:
 	Register dst;
 	Register obj;
@@ -80,6 +87,7 @@ public:
 		Instruction(Type::Store), obj(obj), store_name(store_name), store(store) {}
 
 	std::string to_string() const;
+	void execute(Interpreter &interpreter);
 private:
 	Register obj;
 	std::string store_name;
@@ -91,6 +99,7 @@ public:
 	Jump(uint32_t block_index) : Instruction(Type::Jump), block_index(block_index) {}
 
 	std::string to_string() const;
+	void execute(Interpreter &interpreter);
 private:
 	uint32_t block_index;
 };
@@ -103,6 +112,7 @@ public:
 	void set_jump(uint32_t jump_location) { block_index = jump_location; }
 
 	std::string to_string() const;
+	void execute(Interpreter &interpreter);
 private:
 	uint32_t block_index;
 	Register condition;
@@ -116,6 +126,7 @@ public:
 	void set_jump(uint32_t jump_location) { block_index = jump_location; }
 
 	std::string to_string() const;
+	void execute(Interpreter &interpreter);
 private:
 	uint32_t block_index;
 	Register condition;

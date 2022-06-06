@@ -11,6 +11,7 @@
 #include "Parser.h"
 #include "AST.h"
 #include "Generator.h"
+#include "Interpreter.h"
 
 using namespace std;
 
@@ -61,8 +62,14 @@ void interpret_file(string filename) {
 
 	Generator generator;
 	ast->generate_bytecode(generator);
+	std::cout << "\n";
 	generator.dump_basic_blocks();
 	generator.dump_scopes();
+
+	Interpreter interpreter(generator);
+	interpreter.run();
+	std::cout << "\n";
+	interpreter.dump();
 
 	#ifdef DEBUG
 		//cout << ast->to_string();
