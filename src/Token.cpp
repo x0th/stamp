@@ -46,6 +46,9 @@ std::string token_readable(Token *token) {
 		case TokWhile: return "while";
 		case TokProgram: return "Program";
 		case TokFnCall: return "Function call";
+		case TokSlashSlash: return "Comment";
+		case TokSlashStar: return "Multiline comment begin";
+		case TokStarSlash: return "Multiline comment end";
 	}
 	return "";
 }

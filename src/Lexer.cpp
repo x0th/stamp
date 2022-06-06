@@ -48,10 +48,23 @@ Token scan(string &raw_string, long unsigned int *position) {
 		case ']': next_char; return Token({ type: TokSqBracketR, value: ""});
 		case '^': next_char; return Token({ type: TokMessage, value: "clone"});
 		case '%': next_char; return Token({ type: TokMessage, value: "%" });
-		case '*': next_char; return Token({ type: TokMessage, value: "*" });
-		case '/': next_char; return Token({ type: TokMessage, value: "/" });
 		case '+': next_char; return Token({ type: TokMessage, value: "+" });
 		case '-': next_char; return Token({ type: TokMessage, value: "-" });
+		case '/': {
+			c = next_char;
+			switch (c) {
+				case '/': next_char; return Token({ type: TokSlashSlash, value: "" });
+				case '*': next_char; return Token({ type: TokSlashStar, value: "" });
+				default: return Token({ type: TokMessage, value: "/" });
+			}
+		}
+		case '*': {
+			c = next_char;
+			switch (c) {
+				case '/': next_char; return Token({ type: TokStarSlash, value: "" });
+				default: return Token({ type: TokMessage, value: "*" });
+			}
+		}
 		case '<': {
 			c = next_char;
 			switch (c) {

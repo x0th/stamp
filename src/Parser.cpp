@@ -58,10 +58,27 @@ string error_msg(string error) {
 	return out;
 }
 
+bool request_line();
+
 inline void next_token() {
-	if (raw_str.size() > position)
+	if (raw_str.size() > position) {
 		tok = scan(raw_str, &position);
-	else
+		if (tok.type == TokSlashSlash) {
+			if (!request_line())
+				tok = Token({ type: TokEOF, value: "" });
+			else
+				next_token();
+		} if (tok.type == TokSlashStar) {
+			while (tok.type != TokStarSlash) {
+				tok = scan(raw_str, &position);
+				if (tok.type == TokEOF) {
+					if (!request_line())
+						throw error_msg("Unmatched multiline comment start.");
+				}
+			}
+			next_token();
+		}
+	} else
 		tok = Token({ type: TokEOF, value: "" });
 }
 
