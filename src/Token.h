@@ -36,7 +36,9 @@
 	T(TokFnCall) \
 	T(TokSlashSlash) \
 	T(TokSlashStar) \
-	T(TokStarSlash)
+	T(TokStarSlash) \
+	T(TokBreak) \
+	T(TokContinue)
 
 enum TokenType {
 #define __DEFINE_TOKEN_TYPES(t) \

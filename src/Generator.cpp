@@ -18,18 +18,18 @@ BasicBlock *Generator::add_basic_block() {
 	return basic_blocks[num_basic_blocks++];
 }
 
-uint32_t Generator::add_scope_beginning(uint32_t flags) {
-	scopes.push_back(LexicalScope(add_basic_block()->get_index(), flags));
-	return num_scopes++;
+LexicalScope *Generator::add_scope_beginning(uint32_t flags) {
+	scopes.push_back(new LexicalScope(add_basic_block()->get_index(), flags));
+	return scopes[num_scopes++];
 }
 
-uint32_t Generator::add_scope_beginning_current_bb(uint32_t flags) {
-	scopes.push_back(LexicalScope(basic_blocks[num_basic_blocks - 1]->get_index(), flags));
-	return num_scopes++;
+LexicalScope *Generator::add_scope_beginning_current_bb(uint32_t flags) {
+	scopes.push_back(new LexicalScope(basic_blocks[num_basic_blocks - 1]->get_index(), flags));
+	return scopes[num_scopes++];
 }
 
-void Generator::end_scope(uint32_t scope_id) {
-	scopes[scope_id].end_scope(basic_blocks[num_basic_blocks - 1]->get_index());
+void Generator::end_scope(LexicalScope *scope) {
+	scope->end_scope(basic_blocks[num_basic_blocks - 1]->get_index());
 }
 
 void Generator::dump() {
@@ -45,5 +45,5 @@ void Generator::dump_basic_blocks() {
 void Generator::dump_scopes() {
 	std::cout << "Lexical scopes:\n";
 	for (auto const &scope : scopes)
-		std::cout << scope.to_string() << "\n";
+		std::cout << scope->to_string() << "\n";
 }

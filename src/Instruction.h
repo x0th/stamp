@@ -12,7 +12,6 @@
 #include <cinttypes>
 
 #include "Register.h"
-#include "Interpreter.h"
 
 class Interpreter;
 
@@ -97,6 +96,8 @@ private:
 class Jump final : public Instruction {
 public:
 	Jump(uint32_t block_index) : Instruction(Type::Jump), block_index(block_index) {}
+
+	void set_jump(uint32_t jump_location) { block_index = jump_location; }
 
 	std::string to_string() const;
 	void execute(Interpreter &interpreter);

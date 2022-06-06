@@ -105,11 +105,35 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			auto condition = children[0]->generate_bytecode(generator);
 			auto ji = generator.append<JumpFalse>(*condition);
 			auto body_scope = generator.add_scope_beginning(WHILE_SCOPE_FLAGS);
+			body_scope->set_continue_dest(condition_bb->get_index());
 			auto body = children[1]->generate_bytecode(generator);
 			generator.append<Jump>(condition_bb->get_index());
+			auto after_while = generator.add_basic_block()->get_index();
+			body_scope->set_break_dest(after_while);
 			generator.end_scope(body_scope);
-			ji->set_jump(generator.add_basic_block()->get_index());
+			ji->set_jump(after_while);
 			return body;
+		}
+		case TokBreak: {
+			for (int i = generator.get_num_scopes() - 1; i >= 0; i--) {
+				auto lscope = generator.get_scope(i);
+				if (lscope->can_break) {
+					lscope->add_pending_break(generator.append<Jump>(0));
+					return {};
+				}
+			}
+			// FIXME: error!
+			break;
+		}
+		case TokContinue: {
+			for (int i = generator.get_num_scopes() - 1; i >= 0; i--) {
+				auto lscope = generator.get_scope(i);
+				if (lscope->can_continue) {
+					generator.append<Jump>(lscope->get_continue_dest());
+				}
+			}
+			// FIXME: error!
+			break;
 		}
 		case TokStore: {
 			auto obj = children[0]->generate_bytecode(generator);

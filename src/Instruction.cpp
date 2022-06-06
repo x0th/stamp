@@ -9,6 +9,7 @@
 
 #include "Instruction.h"
 #include "Register.h"
+#include "Interpreter.h"
 
 void Instruction::execute(Interpreter &interpreter) {
 #define __INSTRUCTION_TYPES(t)                          \

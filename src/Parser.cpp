@@ -132,6 +132,8 @@ void parse_statement_list(ASTNode *s) {
 		case TokString:
 		case TokSqBracketL:
 		case TokMessage:
+		case TokBreak:
+		case TokContinue:
 		{
 			st = parse_statement();
 			if (st) {
@@ -225,6 +227,12 @@ ASTNode *parse_statement() {
 			children.push_back(parse_statement());
 			children.push_back(new ASTNode(msg));
 			return new ASTNode(Token{ type: TokSend, value: "" }, children);
+		}
+		case TokBreak:
+		case TokContinue: {
+			auto ast = new ASTNode(tok);
+			next_token();
+			return ast;
 		}
 		default:
 			return nullptr;
