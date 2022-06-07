@@ -32,11 +32,26 @@ void Load::execute(Interpreter &interpreter) {
 }
 
 void Store::execute(Interpreter &interpreter) {
-
+	auto object = std::get_if<Object*>(&interpreter.at(obj.get_index()));
+	if (object) {
+		auto st_register = interpreter.at(store.get_index());
+		auto st = std::get_if<Object*>(&st_register);
+		if (st)
+			(*object)->add_store<StoreObject>(store_name, *st);
+		else
+			(*object)->add_store<StoreLiteral>(store_name, std::get<std::string>(st_register));
+	} else {
+		// FIXME: Error!
+	}
 }
 
 void Send::execute(Interpreter &interpreter) {
-
+	auto object = std::get_if<Object*>(&interpreter.at(obj.get_index()));
+	if (object) {
+		interpreter.store_at(dst.get_index(), (*object)->send(msg, stamp));
+	} else {
+		// FIXME: Error!
+	}
 }
 
 void Jump::execute(Interpreter &interpreter) {

@@ -31,6 +31,7 @@ Context *Context::make_global_context() {
 
 	// Object
 	auto object = new Object(nullptr, "Object");
+	object->add_store<StoreLiteral>("type", "Object");
 
 	global_context->add("Object", object);
 

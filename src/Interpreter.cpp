@@ -15,7 +15,7 @@ void Interpreter::run() {
 
 		// add all lexical scopes that start with the current basic block index to the context
 		LexicalScope *lscope = generator.get_scope(lexical_scope_index);
-		while (lscope->starts_at(bb->get_index())) {
+		while (lscope && lscope->starts_at(bb->get_index())) {
 			if (bb_index == 0)
 				scopes.add_scope(lscope, Context::make_global_context());
 			else

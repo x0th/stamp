@@ -32,6 +32,10 @@ public:
 		reg_values.insert(it, value);
 	}
 
+	std::variant<Object *, std::string> &at(uint32_t register_index) {
+		return reg_values[register_index];
+	}
+
 	Object *fetch_object(std::string &name);
 private:
 	class Scopes {
