@@ -55,15 +55,19 @@ void Send::execute(Interpreter &interpreter) {
 }
 
 void Jump::execute(Interpreter &interpreter) {
-
+	interpreter.jump_bb(block_index);
 }
 
 void JumpTrue::execute(Interpreter &interpreter) {
-
+	auto object = std::get_if<Object*>(&interpreter.at(condition.get_index()));
+	if (*object == interpreter.fetch_global_object("true"))
+		interpreter.jump_bb(block_index);
 }
 
 void JumpFalse::execute(Interpreter &interpreter) {
-
+	auto object = std::get_if<Object*>(&interpreter.at(condition.get_index()));
+	if (*object == interpreter.fetch_global_object("false"))
+		interpreter.jump_bb(block_index);
 }
 
 void Instruction::dealloc() {

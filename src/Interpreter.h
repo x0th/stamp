@@ -36,7 +36,13 @@ public:
 		return reg_values[register_index];
 	}
 
+	inline void jump_bb(uint32_t bb_index) {
+		current_bb = bb_index;
+		should_terminate_bb = true;
+	}
+
 	Object *fetch_object(std::string &name);
+	Object *fetch_global_object(std::string name);
 private:
 	class Scopes {
 	public:
@@ -60,6 +66,8 @@ private:
 		}
 	};
 
+	bool should_terminate_bb = { false };
+	uint32_t current_bb = { 0 };
 	Generator &generator;
 	std::vector<std::variant<Object *, std::string>> reg_values;
 	Scopes scopes;
