@@ -6,9 +6,13 @@
 
 #include <sstream>
 
+#include "DefaultStores.h"
 #include "Object.h"
 
 std::variant<Object *, std::string> Object::send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp) {
+	if (is_default_store(message)) {
+		return default_stores_map[message](this, stamp);
+	}
 	if (stores.count(message)) {
 #define __UNWRAP_STORE(t, c) \
 		case InternalStore::Type::t: return static_cast<c*>(stores[message])->unwrap();
@@ -17,7 +21,8 @@ std::variant<Object *, std::string> Object::send(std::string message, std::optio
 		}
 #undef __UNWRAP_STORE
 	}
-	return "lole";
+	// FIXME: Error!
+	return nullptr;
 }
 
 std::string Object::to_string() const {

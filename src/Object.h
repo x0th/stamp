@@ -7,7 +7,7 @@
 #pragma once
 
 #include <string>
-#include <vector>
+#include <set>
 #include <optional>
 #include <map>
 #include <variant>
@@ -69,10 +69,20 @@ public:
 		stores[store_name] = static_cast<InternalStore*>(new T(std::forward<Args>(args)...));
 	}
 
+	void add_default_stores(std::set<std::string> &stores) {
+		for (auto store : stores)
+			default_stores.insert(store);
+	}
+
+	bool is_default_store(std::string &store) { return default_stores.count(store) == 1; }
+
+	std::string get_type() const { return type; }
+
 	std::string to_string() const;
 private:
 	int hash;
 	Object *prototype;
 	std::string type;
 	std::map<std::string, InternalStore*> stores;
+	std::set<std::string> default_stores;
 };
