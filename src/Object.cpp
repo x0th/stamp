@@ -8,10 +8,11 @@
 
 #include "DefaultStores.h"
 #include "Object.h"
+#include "Interpreter.h"
 
-std::variant<Object *, std::string> Object::send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp) {
+std::variant<Object *, std::string> Object::send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
 	if (is_default_store(message)) {
-		return default_stores_map[message](this, stamp);
+		return default_stores_map[message](this, stamp, interpreter);
 	}
 	if (stores.count(message)) {
 #define __UNWRAP_STORE(t, c) \
@@ -27,6 +28,11 @@ std::variant<Object *, std::string> Object::send(std::string message, std::optio
 
 std::string Object::to_string() const {
 	std::stringstream s;
-	s << type << "-" << std::hex << hash;
+	if (type == "True")
+		s << "True";
+	else if (type == "False")
+		s << "False";
+	else
+		s << type << "-" << std::hex << hash;
 	return s.str();
 }

@@ -48,7 +48,7 @@ void Store::execute(Interpreter &interpreter) {
 void Send::execute(Interpreter &interpreter) {
 	auto object = std::get_if<Object*>(&interpreter.at(obj.get_index()));
 	if (object) {
-		interpreter.store_at(dst.get_index(), (*object)->send(msg, stamp));
+		interpreter.store_at(dst.get_index(), (*object)->send(msg, stamp, interpreter));
 	} else {
 		// FIXME: Error!
 	}

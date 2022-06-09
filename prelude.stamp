@@ -1,0 +1,4 @@
+True = Object^;
+True clone = True;
+False = Object^;
+False clone = False;

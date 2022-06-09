@@ -41,6 +41,10 @@ public:
 		should_terminate_bb = true;
 	}
 
+	void put_object(std::string name, Object *object) {
+		scopes.contexts[scopes.contexts.size() - 1]->add(name, object);
+	}
+
 	Object *fetch_object(std::string &name);
 	Object *fetch_global_object(std::string name);
 private:

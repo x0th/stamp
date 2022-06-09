@@ -17,6 +17,7 @@
 class Object;
 class StoreObject;
 class StoreLiteral;
+class Interpreter;
 
 #define ENUMERATE_STORE_TYPES(T)       \
 	T(StoreObject, StoreObject)        \
@@ -62,7 +63,7 @@ public:
 		hash = rand();
 	}
 
-	std::variant<Object *, std::string> send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp);
+	std::variant<Object *, std::string> send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter);
 
 	template<class T, typename... Args>
 	void add_store(std::string store_name, Args&&... args) {
@@ -77,10 +78,11 @@ public:
 	bool is_default_store(std::string &store) { return default_stores.count(store) == 1; }
 
 	std::string get_type() const { return type; }
+	uint32_t get_hash() const { return hash; }
 
 	std::string to_string() const;
 private:
-	int hash;
+	uint32_t hash;
 	Object *prototype;
 	std::string type;
 	std::map<std::string, InternalStore*> stores;
