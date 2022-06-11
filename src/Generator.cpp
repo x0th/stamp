@@ -5,6 +5,7 @@
  */
 
 #include <iostream>
+#include <fstream>
 
 #include "Generator.h"
 #include "Register.h"
@@ -46,4 +47,40 @@ void Generator::dump_scopes() {
 	std::cout << "Lexical scopes:\n";
 	for (auto const &scope : scopes)
 		std::cout << scope->to_string() << "\n";
+}
+
+void Generator::write_to_file(std::string &filename) {
+	std::ofstream outfile(filename, std::ios::binary);
+
+	for (auto bb : basic_blocks) {
+		uint8_t bbyte = 0xbb;
+		outfile.write(reinterpret_cast<char*>(&bbyte), sizeof(uint8_t));
+		for (auto instr : bb->get_instructions()) {
+			instr->to_file(outfile);
+		}
+	}
+
+	outfile.close();
+}
+
+void Generator::read_from_file(std::string &filename) {
+	std::ifstream infile(filename, std::ios::binary);
+
+	BasicBlock *bb;
+	while (!infile.eof()) {
+		uint8_t first_byte = 0x00;
+		infile.read(reinterpret_cast<char*>(&first_byte), sizeof(uint8_t));
+		if (first_byte == 0xbb)
+			bb = add_basic_block();
+		else if (first_byte == 0x00)
+			break;
+		else if (bb)
+			bb->add_instruction(Instruction::from_file(infile, first_byte));
+		else {
+			// FIXME: Error!
+			break;
+		}
+	}
+
+	infile.close();
 }

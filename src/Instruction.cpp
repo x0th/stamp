@@ -6,13 +6,14 @@
 
 #include <string>
 #include <sstream>
+#include <cstring>
 
 #include "Instruction.h"
 #include "Register.h"
 #include "Interpreter.h"
 
 void Instruction::execute(Interpreter &interpreter) {
-#define __INSTRUCTION_TYPES(t)                          \
+#define __INSTRUCTION_TYPES(t, b)                       \
 		case Instruction::Type::t:                      \
 			static_cast<t&>(*this).execute(interpreter);         \
 			break;
@@ -71,7 +72,7 @@ void JumpFalse::execute(Interpreter &interpreter) {
 }
 
 void Instruction::dealloc() {
-#define __INSTRUCTION_TYPES(t)                          \
+#define __INSTRUCTION_TYPES(t, b)                          \
 		case Instruction::Type::t:                      \
 			static_cast<t&>(*this).~t();                   \
 			return;
@@ -87,7 +88,7 @@ void Instruction::dealloc() {
 }
 
 std::string Instruction::to_string() const {
-#define __INSTRUCTION_TYPES(t)                          \
+#define __INSTRUCTION_TYPES(t, b)                          \
 		case Instruction::Type::t:                      \
 			return static_cast<t const&>(*this).to_string();
 
@@ -147,4 +148,205 @@ std::string JumpFalse::to_string() const {
 	std::stringstream s;
 	s << "JumpFalse r" << condition.get_index() << ", BB" << block_index;
 	return s.str();
+}
+
+void Instruction::to_file(std::ofstream &outfile) const {
+#define __INSTRUCTION_TYPES(t, b)                          \
+		case Instruction::Type::t:                      \
+			static_cast<t const&>(*this).to_file(outfile, b); break;
+
+	switch(type) {
+		ENUMERATE_INSTRUCTION_TYPES(__INSTRUCTION_TYPES)
+		default: {
+			// FIXME: Error!
+		}
+	}
+
+#undef __INSTRUCTION_TYPES
+}
+
+void Load::to_file(std::ofstream &outfile, uint8_t code) const {
+	uint32_t dst_index = dst.get_index();
+	outfile.write(reinterpret_cast<char*>(&code), sizeof(uint8_t));
+	outfile.write(reinterpret_cast<char*>(&dst_index), sizeof(uint32_t));
+	uint32_t size = value.size();
+	const char *str = value.c_str();
+	outfile.write(reinterpret_cast<char*>(&size), sizeof(uint32_t));
+	outfile.write(str, size);
+}
+
+void Send::to_file(std::ofstream &outfile, uint8_t code) const {
+	uint32_t dst_index = dst.get_index();
+	uint32_t obj_index = obj.get_index();
+	uint32_t msg_size = msg.size();
+	const char *msg_str = msg.c_str();
+	outfile.write(reinterpret_cast<char*>(&code), sizeof(uint8_t));
+	outfile.write(reinterpret_cast<char*>(&dst_index), sizeof(uint32_t));
+	outfile.write(reinterpret_cast<char*>(&obj_index), sizeof(uint32_t));
+	outfile.write(reinterpret_cast<char*>(&msg_size), sizeof(uint32_t));
+	outfile.write(msg_str, msg_size);
+
+	uint8_t stamp_type = 0x00;
+	if (stamp.has_value()) {
+		stamp_type = std::holds_alternative<Register>(*stamp) ? 0x01 :
+				(std::holds_alternative<std::string>(*stamp) ? 0x02 : 0x03);
+	}
+	outfile.write(reinterpret_cast<char*>(&stamp_type), sizeof(uint8_t));
+	if (stamp_type == 0x01) {
+		uint32_t st = std::get<Register>(*stamp).get_index();
+		outfile.write(reinterpret_cast<char*>(&st), sizeof(uint32_t));
+	} else if (stamp_type == 0x02) {
+		std::string st = std::get<std::string>(*stamp);
+		uint32_t size = st.size();
+		const char *st_str = st.c_str();
+		outfile.write(reinterpret_cast<char*>(&size), sizeof(uint32_t));
+		outfile.write(st_str, size);
+	} else if (stamp_type == 0x03) {
+		uint32_t st = std::get<uint32_t>(*stamp);
+		outfile.write(reinterpret_cast<char*>(&st), sizeof(uint32_t));
+	}
+}
+
+void Store::to_file(std::ofstream &outfile, uint8_t code) const {
+	uint32_t obj_index = obj.get_index();
+	uint32_t store_size = store_name.size();
+	const char *store_str = store_name.c_str();
+	uint32_t store_index = store.get_index();
+	outfile.write(reinterpret_cast<char*>(&code), sizeof(uint8_t));
+	outfile.write(reinterpret_cast<char*>(&obj_index), sizeof(uint32_t));
+	outfile.write(reinterpret_cast<char*>(&store_size), sizeof(uint32_t));
+	outfile.write(store_str, store_size);
+	outfile.write(reinterpret_cast<char*>(&store_index), sizeof(uint32_t));
+}
+
+void Jump::to_file(std::ofstream &outfile, uint8_t code) const {
+	outfile.write(reinterpret_cast<char*>(&code), sizeof(uint8_t));
+	// have to do this because otherwise reinterpret_cast does not like it
+	uint32_t b_index = block_index;
+	outfile.write(reinterpret_cast<char*>(&b_index), sizeof(uint32_t));
+}
+
+void JumpTrue::to_file(std::ofstream &outfile, uint8_t code) const {
+	outfile.write(reinterpret_cast<char*>(&code), sizeof(uint8_t));
+	// have to do this because otherwise reinterpret_cast does not like it
+	uint32_t b_index = block_index;
+	outfile.write(reinterpret_cast<char*>(&b_index), sizeof(uint32_t));
+	uint32_t condition_index = condition.get_index();
+	outfile.write(reinterpret_cast<char*>(&condition_index), sizeof(uint32_t));
+}
+
+void JumpFalse::to_file(std::ofstream &outfile, uint8_t code) const {
+	outfile.write(reinterpret_cast<char*>(&code), sizeof(uint8_t));
+	// have to do this because otherwise reinterpret_cast does not like it
+	uint32_t b_index = block_index;
+	outfile.write(reinterpret_cast<char*>(&b_index), sizeof(uint32_t));
+	uint32_t condition_index = condition.get_index();
+	outfile.write(reinterpret_cast<char*>(&condition_index), sizeof(uint32_t));
+}
+
+Instruction* Instruction::from_file(std::ifstream &infile, uint8_t code) {
+#define __INSTRUCTION_TYPES(t, b) \
+    case b: \
+	return static_cast<Instruction *>(t::from_file(infile));
+
+	switch (code) {
+		ENUMERATE_INSTRUCTION_TYPES(__INSTRUCTION_TYPES)
+		default: {
+			// Fixme: Error!
+			return nullptr;
+		}
+	}
+
+#undef __INSTRUCTION_TYPES
+}
+
+Load *Load::from_file(std::ifstream &infile) {
+	uint32_t index;
+	infile.read(reinterpret_cast<char*>(&index), sizeof(uint32_t));
+	uint32_t size;
+	infile.read(reinterpret_cast<char*>(&size), sizeof(uint32_t));
+	char value[size+1];
+	infile.read(reinterpret_cast<char*>(&value), size);
+	value[size] = '\0';
+
+	return new Load(Register(index), value);
+}
+
+Send *Send::from_file(std::ifstream &infile) {
+	uint32_t dst;
+	infile.read(reinterpret_cast<char*>(&dst), sizeof(uint32_t));
+	uint32_t obj;
+	infile.read(reinterpret_cast<char*>(&obj), sizeof(uint32_t));
+	uint32_t msg_size;
+	infile.read(reinterpret_cast<char*>(&msg_size), sizeof(uint32_t));
+	char msg[msg_size+1];
+	infile.read(reinterpret_cast<char*>(&msg), msg_size);
+	msg[msg_size] = '\0';
+
+	uint8_t stamp_type;
+	infile.read(reinterpret_cast<char*>(&stamp_type), sizeof(uint8_t));
+	if (stamp_type == 0x00) {
+		std::optional<uint32_t> st = std::nullopt;
+		return new Send(dst, obj, msg, st);
+	} else if (stamp_type == 0x01) {
+		uint32_t r_index;
+		infile.read(reinterpret_cast<char*>(&r_index), sizeof(uint32_t));
+		std::optional<Register> st = Register(r_index);
+		return new Send(dst, obj, msg, st);
+	} else if (stamp_type == 0x02) {
+		uint32_t st_size;
+		infile.read(reinterpret_cast<char*>(&st_size), sizeof(uint32_t));
+		char stamp[st_size+1];
+		infile.read(reinterpret_cast<char*>(&stamp), st_size);
+		stamp[st_size] = '\0';
+		std::optional<std::string> st = std::string(stamp);
+		return new Send(dst, obj, msg, st);
+	} else if (stamp_type == 0x03) {
+		uint32_t bb_index;
+		infile.read(reinterpret_cast<char*>(&bb_index), sizeof(uint32_t));
+		std::optional<uint32_t> st = bb_index;
+		return new Send(dst, obj, msg, st);
+	} else {
+		// FIXME: Error!
+		return nullptr;
+	}
+}
+
+Store *Store::from_file(std::ifstream &infile) {
+	uint32_t dst;
+	infile.read(reinterpret_cast<char*>(&dst), sizeof(uint32_t));;
+	uint32_t store_size;
+	infile.read(reinterpret_cast<char*>(&store_size), sizeof(uint32_t));
+	char store_name[store_size+1];
+	infile.read(reinterpret_cast<char*>(&store_name), store_size);
+	store_name[store_size] = '\0';
+	uint32_t store;
+	infile.read(reinterpret_cast<char*>(&store), sizeof(uint32_t));
+
+	return new Store(dst, store_name, store);
+}
+
+Jump *Jump::from_file(std::ifstream &infile) {
+	uint32_t block_index;
+	infile.read(reinterpret_cast<char*>(&block_index), sizeof(uint32_t));
+
+	return new Jump(block_index);
+}
+
+JumpTrue *JumpTrue::from_file(std::ifstream &infile) {
+	uint32_t block_index;
+	infile.read(reinterpret_cast<char*>(&block_index), sizeof(uint32_t));
+	uint32_t condition;
+	infile.read(reinterpret_cast<char*>(&condition), sizeof(uint32_t));
+
+	return new JumpTrue(block_index, Register(condition));
+}
+
+JumpFalse *JumpFalse::from_file(std::ifstream &infile) {
+	uint32_t block_index;
+	infile.read(reinterpret_cast<char*>(&block_index), sizeof(uint32_t));
+	uint32_t condition;
+	infile.read(reinterpret_cast<char*>(&condition), sizeof(uint32_t));
+
+	return new JumpFalse(block_index, Register(condition));
 }

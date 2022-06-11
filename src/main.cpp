@@ -63,8 +63,11 @@ void interpret_file(string filename) {
 	Generator generator;
 	ast->generate_bytecode(generator);
 	std::cout << "\n";
+	std::string outfile = "out.ostamp";
+	//generator.read_from_file(outfile);
 	generator.dump_basic_blocks();
 	generator.dump_scopes();
+	generator.write_to_file(outfile);
 
 	Interpreter interpreter(generator);
 	interpreter.run();

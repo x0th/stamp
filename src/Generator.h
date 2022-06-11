@@ -97,6 +97,9 @@ public:
 		basic_blocks[basic_blocks.size() - 1]->add_instruction(static_cast<Instruction*>(inst));
 		return inst;
 	}
+
+	void write_to_file(std::string &filename);
+	void read_from_file(std::string &filename);
 private:
 	uint32_t register_number = { 0 };
 	uint32_t num_basic_blocks = { 0 };
