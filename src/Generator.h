@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include "Instruction.h"
 #include "BasicBlock.h"
@@ -21,7 +22,7 @@ class BasicBlock;
 
 class LexicalScope {
 public:
-	LexicalScope(int32_t scope_beginning, int32_t flags) : scope_beginning(scope_beginning), scope_end(-1) {
+	LexicalScope(int32_t scope_beginning, uint8_t flags) : scope_beginning(scope_beginning), scope_end(-1) {
 		can_continue = flags & 0b1;
 		can_break = (flags & 0b10) >> 1;
 		can_return = (flags & 0b100) >> 2;
@@ -56,6 +57,58 @@ public:
 	bool ends_at(uint32_t index) { return scope_end == (int32_t)index; }
 
 	void add_pending_break(Jump *pb) { pending_breaks.push_back(pb); }
+
+	void to_file(std::ofstream &outfile) {
+		uint8_t indicator = 0xaa;
+		uint8_t flags = 0;
+		if (can_continue)
+			flags = flags | 0b1;
+		if (can_break)
+			flags = flags | 0b10;
+		if (can_return)
+			flags = flags | 0b100;
+		outfile.write(reinterpret_cast<char*>(&indicator), sizeof(uint8_t));
+		outfile.write(reinterpret_cast<char*>(&scope_beginning), sizeof(int32_t));
+		outfile.write(reinterpret_cast<char*>(&flags), sizeof(uint8_t));
+		if (can_continue)
+			outfile.write(reinterpret_cast<char*>(&continue_dest), sizeof(uint32_t));
+		if (can_break)
+			outfile.write(reinterpret_cast<char*>(&break_dest), sizeof(uint32_t));
+		if (can_return)
+			outfile.write(reinterpret_cast<char*>(&return_dest), sizeof(int32_t));
+		outfile.write(reinterpret_cast<char*>(&scope_end), sizeof(int32_t));
+	}
+
+	static LexicalScope *from_file(std::ifstream &infile) {
+		int32_t scope_beginning;
+		infile.read(reinterpret_cast<char*>(&scope_beginning), sizeof(int32_t));
+		uint8_t flags;
+		infile.read(reinterpret_cast<char*>(&flags), sizeof(uint8_t));
+
+		auto ls = new LexicalScope(scope_beginning, flags);
+
+		if (ls->can_continue) {
+			uint32_t dest;
+			infile.read(reinterpret_cast<char*>(&dest), sizeof(uint32_t));
+			ls->set_continue_dest(dest);
+		}
+		if (ls->can_break) {
+			uint32_t dest;
+			infile.read(reinterpret_cast<char*>(&dest), sizeof(uint32_t));
+			ls->set_break_dest(dest);
+		}
+		if (ls->can_return) {
+			uint32_t dest;
+			infile.read(reinterpret_cast<char*>(&dest), sizeof(uint32_t));
+			ls->set_return_dest(dest);
+		}
+
+		int32_t end;
+		infile.read(reinterpret_cast<char*>(&end), sizeof(int32_t));
+		ls->end_scope(end);
+
+		return ls;
+	}
 
 	bool can_continue = { false };
 	bool can_break = { false };

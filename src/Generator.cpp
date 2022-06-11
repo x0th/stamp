@@ -5,7 +5,6 @@
  */
 
 #include <iostream>
-#include <fstream>
 
 #include "Generator.h"
 #include "Register.h"
@@ -60,6 +59,10 @@ void Generator::write_to_file(std::string &filename) {
 		}
 	}
 
+	for (auto ls : scopes) {
+		ls->to_file(outfile);
+	}
+
 	outfile.close();
 }
 
@@ -72,6 +75,8 @@ void Generator::read_from_file(std::string &filename) {
 		infile.read(reinterpret_cast<char*>(&first_byte), sizeof(uint8_t));
 		if (first_byte == 0xbb)
 			bb = add_basic_block();
+		else if (first_byte == 0xaa)
+			scopes.push_back(LexicalScope::from_file(infile));
 		else if (first_byte == 0x00)
 			break;
 		else if (bb)
