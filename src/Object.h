@@ -85,7 +85,7 @@ public:
 		hash = rand();
 	}
 
-	std::variant<Object *, std::string, int32_t> send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter);
+	std::variant<Object *, std::string, int32_t> send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Object *forwarder, Interpreter &interpreter);
 
 	template<class T, typename... Args>
 	void add_store(std::string store_name, Args&&... args) {

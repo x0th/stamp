@@ -10,9 +10,9 @@
 #include "Object.h"
 #include "Interpreter.h"
 
-std::variant<Object *, std::string, int32_t> Object::send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+std::variant<Object *, std::string, int32_t> Object::send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Object *forwarder, Interpreter &interpreter) {
 	if (is_default_store(message)) {
-		return default_stores_map[message](this, stamp, interpreter);
+		return default_stores_map[message](forwarder ? forwarder : this, stamp, interpreter);
 	}
 	if (stores.count(message)) {
 #define __UNWRAP_STORE(t, c) \
@@ -21,6 +21,12 @@ std::variant<Object *, std::string, int32_t> Object::send(std::string message, s
 			ENUMERATE_STORE_TYPES(__UNWRAP_STORE)
 		}
 #undef __UNWRAP_STORE
+	} else {
+		if (prototype)
+			return prototype->send(message, stamp, this, interpreter);
+		else {
+			// FIXME: Error!
+		}
 	}
 	// FIXME: Error!
 	return nullptr;
