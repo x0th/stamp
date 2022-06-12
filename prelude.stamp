@@ -2,3 +2,9 @@ True = Object^;
 True clone = True;
 False = Object^;
 False clone = False;
+
+Int = Object^;
+Int store_value = default;
+
+Char = Object^;
+Char store_value = default;

@@ -16,7 +16,7 @@
 #include "Register.h"
 #include "Interpreter.h"
 
-std::variant<Object *, std::string> clone_object(Object *original, std::optional<std::variant<Register, std::string, uint32_t>> name, Interpreter&interpreter) {
+std::variant<Object *, std::string, int32_t> clone_object(Object *original, std::optional<std::variant<Register, std::string, uint32_t>> name, Interpreter&interpreter) {
 	std::string new_type = std::get<std::string>(*name);
 	if (std::isupper(new_type[0])) {
 		Object *cloned = new Object(original, new_type);
@@ -31,7 +31,7 @@ std::variant<Object *, std::string> clone_object(Object *original, std::optional
 	}
 }
 
-std::variant<Object *, std::string> object_equals(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> other, Interpreter &interpreter) {
+std::variant<Object *, std::string, int32_t> object_equals(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> other, Interpreter &interpreter) {
 	Object *other_object;
 	if (std::get_if<Register>(&*other))
 		other_object = *std::get_if<Object*>(&interpreter.at(std::get<Register>(*other).get_index()));
@@ -44,7 +44,7 @@ std::variant<Object *, std::string> object_equals(Object *object, std::optional<
 		return interpreter.fetch_global_object("False");
 }
 
-std::variant<Object *, std::string> object_nequals(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> other, Interpreter &interpreter) {
+std::variant<Object *, std::string, int32_t> object_nequals(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> other, Interpreter &interpreter) {
 	Object *other_object;
 	if (std::get_if<Register>(&*other))
 		other_object = *std::get_if<Object*>(&interpreter.at(std::get<Register>(*other).get_index()));
@@ -57,13 +57,28 @@ std::variant<Object *, std::string> object_nequals(Object *object, std::optional
 		return interpreter.fetch_global_object("False");
 }
 
+std::variant<Object *, std::string, int32_t> store_value(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> _stamp, Interpreter &) {
+	auto stamp = std::get<std::string>(*_stamp);
+	if (object->get_type() == "Int") {
+		object->add_store<StoreInt>("value", std::stoi(stamp));
+		return object;
+	} else if (object->get_type() == "Char") {
+		object->add_store<StoreChar>("value", stamp[0]);
+		return object;
+	} else {
+		// FIXME: Error!
+		return nullptr;
+	}
+}
+
 #define ENUMERATE_DEFAULT_STORES(DS) \
 	DS("clone", clone_object), \
 	DS("==", object_equals), \
-	DS("!=", object_nequals)
+	DS("!=", object_nequals), \
+	DS("store_value", store_value)
 
 #define __ADD_DEFAULT_STORE(fn, fn_name) { fn, fn_name }
-std::map<std::string, std::function<std::variant<Object *, std::string>(Object*,std::optional<std::variant<Register, std::string, uint32_t>>,Interpreter&)>>
+std::map<std::string, std::function<std::variant<Object *, std::string, int32_t>(Object*,std::optional<std::variant<Register, std::string, uint32_t>>,Interpreter&)>>
 default_stores_map ={
 		ENUMERATE_DEFAULT_STORES(__ADD_DEFAULT_STORE)
 };

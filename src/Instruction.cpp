@@ -29,7 +29,10 @@ void Instruction::execute(Interpreter &interpreter) {
 }
 
 void Load::execute(Interpreter &interpreter) {
-	interpreter.store_at(dst.get_index(), interpreter.fetch_object(value));
+	if (value == "default")
+		interpreter.store_at(dst.get_index(), value);
+	else
+		interpreter.store_at(dst.get_index(), interpreter.fetch_object(value));
 }
 
 void Store::execute(Interpreter &interpreter) {
@@ -39,8 +42,14 @@ void Store::execute(Interpreter &interpreter) {
 		auto st = std::get_if<Object*>(&st_register);
 		if (st)
 			(*object)->add_store<StoreObject>(store_name, *st);
-		else
-			(*object)->add_store<StoreLiteral>(store_name, std::get<std::string>(st_register));
+		else {
+			auto store = std::get<std::string>(st_register);
+			if (store == "default") {
+				std::set<std::string> dstores = {store_name};
+				(*object)->add_default_stores(dstores);
+			} else
+				(*object)->add_store<StoreLiteral>(store_name, store);
+		}
 	} else {
 		// FIXME: Error!
 	}

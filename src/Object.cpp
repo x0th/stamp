@@ -10,7 +10,7 @@
 #include "Object.h"
 #include "Interpreter.h"
 
-std::variant<Object *, std::string> Object::send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+std::variant<Object *, std::string, int32_t> Object::send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
 	if (is_default_store(message)) {
 		return default_stores_map[message](this, stamp, interpreter);
 	}

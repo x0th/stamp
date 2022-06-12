@@ -27,12 +27,12 @@ public:
 
 	void run();
 
-	void store_at(uint32_t register_index, std::variant<Object *, std::string> value) {
+	void store_at(uint32_t register_index, std::variant<Object *, std::string, int32_t> value) {
 		auto it = reg_values.begin() + register_index;
 		reg_values.insert(it, value);
 	}
 
-	std::variant<Object *, std::string> &at(uint32_t register_index) {
+	std::variant<Object *, std::string, int32_t> &at(uint32_t register_index) {
 		return reg_values[register_index];
 	}
 
@@ -73,6 +73,6 @@ private:
 	bool should_terminate_bb = { false };
 	uint32_t current_bb = { 0 };
 	Generator &generator;
-	std::vector<std::variant<Object *, std::string>> reg_values;
+	std::vector<std::variant<Object *, std::string, int32_t>> reg_values;
 	Scopes scopes;
 };

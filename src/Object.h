@@ -17,11 +17,15 @@
 class Object;
 class StoreObject;
 class StoreLiteral;
+class StoreInt;
+class StoreChar;
 class Interpreter;
 
 #define ENUMERATE_STORE_TYPES(T)       \
 	T(StoreObject, StoreObject)        \
-	T(StoreLiteral, StoreLiteral)
+	T(StoreLiteral, StoreLiteral)      \
+	T(StoreInt, StoreInt)              \
+	T(StoreChar, StoreChar)
 
 class InternalStore {
 public:
@@ -57,13 +61,31 @@ private:
 	std::string literal;
 };
 
+class StoreInt : public InternalStore {
+public:
+	StoreInt(int32_t integer) : InternalStore(Type::StoreInt), integer(integer) {}
+
+	int32_t unwrap() const { return integer; }
+private:
+	int32_t integer;
+};
+
+class StoreChar : public InternalStore {
+public:
+	StoreChar(char c) : InternalStore(Type::StoreChar), c(c) {}
+
+	char unwrap() const { return c; }
+private:
+	char c;
+};
+
 class Object {
 public:
 	Object(Object *prototype, std::string type) : prototype(prototype), type(type) {
 		hash = rand();
 	}
 
-	std::variant<Object *, std::string> send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter);
+	std::variant<Object *, std::string, int32_t> send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter);
 
 	template<class T, typename... Args>
 	void add_store(std::string store_name, Args&&... args) {
