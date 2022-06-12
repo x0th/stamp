@@ -10,7 +10,8 @@
 #include "Object.h"
 #include "Interpreter.h"
 
-std::variant<Object *, std::string, int32_t> Object::send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Object *forwarder, Interpreter &interpreter) {
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*>
+        Object::send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Object *forwarder, Interpreter &interpreter) {
 	if (is_default_store(message)) {
 		return default_stores_map[message](forwarder ? forwarder : this, stamp, interpreter);
 	}
@@ -29,7 +30,8 @@ std::variant<Object *, std::string, int32_t> Object::send(std::string message, s
 		}
 	}
 	// FIXME: Error!
-	return nullptr;
+	Object *error = nullptr;
+	return error;
 }
 
 std::string Object::to_string() const {

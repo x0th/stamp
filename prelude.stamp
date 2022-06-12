@@ -8,3 +8,8 @@ Int store_value = default;
 
 Char = Object^;
 Char store_value = default;
+
+Vec = Object^;
+Vec store_value = default;
+Vec get = default;
+Vec push = default;

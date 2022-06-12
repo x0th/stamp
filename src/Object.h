@@ -11,6 +11,7 @@
 #include <optional>
 #include <map>
 #include <variant>
+#include <vector>
 
 #include "Register.h"
 
@@ -19,13 +20,15 @@ class StoreObject;
 class StoreLiteral;
 class StoreInt;
 class StoreChar;
+class StoreVec;
 class Interpreter;
 
 #define ENUMERATE_STORE_TYPES(T)       \
 	T(StoreObject, StoreObject)        \
 	T(StoreLiteral, StoreLiteral)      \
 	T(StoreInt, StoreInt)              \
-	T(StoreChar, StoreChar)
+	T(StoreChar, StoreChar)            \
+	T(StoreVec, StoreVec)
 
 class InternalStore {
 public:
@@ -79,17 +82,31 @@ private:
 	char c;
 };
 
+class StoreVec : public InternalStore {
+public:
+	StoreVec(std::vector<InternalStore*> *vec) : InternalStore(Type::StoreVec), vec(vec) {}
+
+	std::vector<InternalStore*> *unwrap() { return vec; }
+private:
+	std::vector<InternalStore*> *vec;
+};
+
 class Object {
 public:
 	Object(Object *prototype, std::string type) : prototype(prototype), type(type) {
 		hash = rand();
 	}
 
-	std::variant<Object *, std::string, int32_t> send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Object *forwarder, Interpreter &interpreter);
+	std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*>
+	        send(std::string message, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Object *forwarder, Interpreter &interpreter);
 
 	template<class T, typename... Args>
 	void add_store(std::string store_name, Args&&... args) {
 		stores[store_name] = static_cast<InternalStore*>(new T(std::forward<Args>(args)...));
+	}
+
+	InternalStore *get_store(std::string store_name) {
+		return stores[store_name];
 	}
 
 	void add_default_stores(std::set<std::string> &stores) {
