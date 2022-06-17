@@ -13,3 +13,6 @@ Vec = Object^;
 Vec store_value = default;
 Vec get = default;
 Vec push = default;
+
+String = Object^;
+String store_value = default;

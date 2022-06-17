@@ -57,22 +57,34 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> objec
 		return interpreter.fetch_global_object("False");
 }
 
-std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store_value(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> _stamp, Interpreter &) {
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store_value(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> _stamp, Interpreter &interpreter) {
 	auto stamp = std::get<std::string>(*_stamp);
 	if (object->get_type() == "Int") {
 		object->add_store<StoreInt>("value", std::stoi(stamp));
-		return object;
 	} else if (object->get_type() == "Char") {
 		object->add_store<StoreChar>("value", stamp[0]);
-		return object;
+	} else if (object->get_type() == "String") {
+		auto str_vec = std::get<Object*>(interpreter.fetch_global_object("Vec")->send("clone", object->get_type() + "_string_vec", nullptr, interpreter));
+		auto char_obj = interpreter.fetch_global_object("Char");
+		for(auto &c : stamp) {
+			auto this_char = std::get<Object*>(char_obj->send("clone", "::lit_" + c, nullptr, interpreter));
+			this_char->add_store<StoreChar>("value", stamp[0]);
+			auto this_char_reg = interpreter.store_at_next_available(this_char);
+			str_vec->send("push", this_char_reg, nullptr, interpreter);
+		}
 	} else {
 		// FIXME: Error!
 		Object *error = nullptr;
 		return error;
 	}
+	return object;
 }
 
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> get(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	// FIXME: maybe move to start of interpreter (or something similar), otherwise will have to add to all Vec functions
+	if (!object->get_store("value")) {
+		object->add_store<StoreVec>("value", new std::vector<InternalStore*>());
+	}
 	auto index = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()))->send("value", nullptr, nullptr, interpreter);
 	auto value = (static_cast<StoreVec*>(object->get_store("value")))->unwrap()->at(std::get<int32_t>(index));
 #define __UNWRAP_STORE(t, c) \

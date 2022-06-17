@@ -32,6 +32,13 @@ public:
 		reg_values.insert(it, value);
 	}
 
+	Register store_at_next_available(std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> value) {
+		auto next_register = generator.next_register();
+		auto it = reg_values.begin() + next_register.get_index();
+		reg_values.insert(it, value);
+		return next_register;
+	}
+
 	std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> &at(uint32_t register_index) {
 		return reg_values[register_index];
 	}
