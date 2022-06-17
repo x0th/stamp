@@ -66,7 +66,7 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store
 	} else if (object->get_type() == "String") {
 		auto str_vec = std::get<Object*>(interpreter.fetch_global_object("Vec")->send("clone", object->get_type() + "_string_vec", nullptr, interpreter));
 		auto char_obj = interpreter.fetch_global_object("Char");
-		for(auto &c : stamp) {
+		for (auto &c : stamp) {
 			auto this_char = std::get<Object*>(char_obj->send("clone", "::lit_" + c, nullptr, interpreter));
 			this_char->add_store<StoreChar>("value", stamp[0]);
 			auto this_char_reg = interpreter.store_at_next_available(this_char);
@@ -102,7 +102,35 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> get(O
 
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> push(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
 	auto store = static_cast<InternalStore*>(new StoreObject(std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()))));
+	// FIXME: maybe move to start of interpreter (or something similar), otherwise will have to add to all Vec functions
+	if (!object->get_store("value")) {
+		object->add_store<StoreVec>("value", new std::vector<InternalStore*>());
+	}
 	(static_cast<StoreVec*>(object->get_store("value")))->unwrap()->push_back(store);
+	return object;
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> clone_callable(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto new_fn = std::get<Object*>(clone_object(object, stamp, interpreter));
+
+	std::set<std::string> ds = { "clone_callable" };
+	new_fn->add_default_stores(ds);
+	auto new_param_names = std::get<Object*>(clone_object(static_cast<StoreObject*>(object->get_store("param_names"))->unwrap(), "::param_names", interpreter));
+	new_fn->add_store<StoreObject>("param_names", new_param_names);
+
+	return new_fn;
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store_param(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto vec = static_cast<StoreObject*>(object->get_store("param_names"))->unwrap();
+	auto param = std::get<Object*>(clone_object(interpreter.fetch_global_object("String"), "::" + std::get<std::string>(*stamp), interpreter));
+	store_value(param, stamp, interpreter);
+	push(vec, interpreter.store_at_next_available(param), interpreter);
+	return object;
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> pass_body(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &) {
+	object->add_store<StoreRegister>("body", std::get<uint32_t>(*stamp));
 	return object;
 }
 
@@ -111,8 +139,11 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> push(
 	DS("==", object_equals), \
 	DS("!=", object_nequals), \
 	DS("store_value", store_value), \
-	DS("get", store_value), \
-	DS("push", push)
+	DS("get", get), \
+	DS("push", push), \
+    DS("clone_callable", clone_callable), \
+	DS("store_param", store_param), \
+	DS("pass_body", pass_body),
 
 #define __ADD_DEFAULT_STORE(fn, fn_name) { fn, fn_name }
 std::map<std::string, std::function<std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*>(Object*,std::optional<std::variant<Register, std::string, uint32_t>>,Interpreter&)>>

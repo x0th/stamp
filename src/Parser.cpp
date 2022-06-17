@@ -275,6 +275,17 @@ ASTNode *parse_statement_tail(ASTNode *object) {
 			match(TokStore); // =
 			next_token();
 			children.push_back(parse_rhs(children[1]));
+
+			// traverse the Send chain to check if the first send was a clone
+			// if so, add the name to it
+			auto rhs = children[2];
+			while (rhs->token.type == TokSend && rhs->get_children()[0]->token.type == TokSend) {
+				rhs = rhs->get_children()[0];
+			}
+			if (rhs->get_children().size() != 0 && rhs->get_children()[1]->token.value == "clone") {
+				rhs->get_children()[1]->get_children().push_back(new ASTNode(Token{ type: TokValue, value: children[1]->token.value }));
+			}
+
 			return new ASTNode(Token { type: TokStore, value: "" }, children);
 		}
 		case TokStore: {

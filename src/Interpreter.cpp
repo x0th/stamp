@@ -68,7 +68,10 @@ void Interpreter::dump() {
 		if (str) {
 			std::cout << *str << "\n";
 		} else {
-			std::cout << std::get<Object*>(r)->to_string() << "\n";
+			auto obj = std::get<Object*>(r);
+			if (obj)
+				std::cout << obj->to_string();
+			std::cout << "\n";
 		}
 	}
 }

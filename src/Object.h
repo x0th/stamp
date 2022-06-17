@@ -21,6 +21,7 @@ class StoreLiteral;
 class StoreInt;
 class StoreChar;
 class StoreVec;
+class StoreRegister;
 class Interpreter;
 
 #define ENUMERATE_STORE_TYPES(T)       \
@@ -28,7 +29,8 @@ class Interpreter;
 	T(StoreLiteral, StoreLiteral)      \
 	T(StoreInt, StoreInt)              \
 	T(StoreChar, StoreChar)            \
-	T(StoreVec, StoreVec)
+	T(StoreVec, StoreVec)              \
+	T(StoreRegister, StoreRegister)
 
 class InternalStore {
 public:
@@ -89,6 +91,15 @@ public:
 	std::vector<InternalStore*> *unwrap() { return vec; }
 private:
 	std::vector<InternalStore*> *vec;
+};
+
+class StoreRegister : public InternalStore {
+public:
+	StoreRegister(uint32_t reg_index) : InternalStore(Type::StoreRegister), reg_index(reg_index) {}
+
+	uint32_t unwrap() { return reg_index; }
+private:
+	uint32_t reg_index;
 };
 
 class Object {

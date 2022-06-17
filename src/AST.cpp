@@ -58,7 +58,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			generator.append<Load>(callable_obj, "Callable");
 			auto callable_name = generator.next_register();
 			std::optional<std::string> st = children[0]->token.value;
-			generator.append<Send>(callable_name, callable_obj, "clone", st);
+			generator.append<Send>(callable_name, callable_obj, "clone_callable", st);
 			auto last_register = callable_name;
 			for (long unsigned i = 1; i < children.size() - 1; i++) {
 				std::optional<std::string> stamp = children[i]->token.value;
