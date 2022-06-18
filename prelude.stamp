@@ -22,3 +22,5 @@ Callable param_names = Vec^;
 Callable clone_callable = default;
 Callable store_param = default;
 Callable pass_body = default;
+Callable pass_param = default;
+Callable call = default;

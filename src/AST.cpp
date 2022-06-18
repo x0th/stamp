@@ -66,11 +66,13 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 				generator.append<Send>(temp_register, last_register, "store_param", stamp);
 				last_register = temp_register;
 			}
+			auto skip_function = generator.append<Jump>(0);
 			auto scope = generator.add_scope_beginning(SCOPE_CAN_RETURN);
 			std::optional<uint32_t> stamp = generator.get_num_bbs() - 1;
 			children[children.size() - 1]->generate_bytecode(generator);
+			generator.append<JumpSaved>();
 			generator.end_scope(scope);
-			generator.add_basic_block();
+			skip_function->set_jump(generator.add_basic_block()->get_index());
 			auto final = generator.next_register();
 			generator.append<Send>(final, last_register, "pass_body", stamp);
 			return final;
@@ -86,6 +88,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			auto final = generator.next_register();
 			std::optional<Register> stamp = {};
 			generator.append<Send>(final, last_register, "call", stamp);
+			generator.add_basic_block();
 			return final;
 		};
 		case TokIf: {

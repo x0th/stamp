@@ -80,6 +80,10 @@ void JumpFalse::execute(Interpreter &interpreter) {
 		interpreter.jump_bb(block_index);
 }
 
+void JumpSaved::execute(Interpreter &interpreter) {
+	interpreter.jump_saved_bb();
+}
+
 void Instruction::dealloc() {
 #define __INSTRUCTION_TYPES(t, b)                          \
 		case Instruction::Type::t:                      \
@@ -156,6 +160,12 @@ std::string JumpTrue::to_string() const {
 std::string JumpFalse::to_string() const {
 	std::stringstream s;
 	s << "JumpFalse r" << condition.get_index() << ", BB" << block_index;
+	return s.str();
+}
+
+std::string JumpSaved::to_string() const {
+	std::stringstream s;
+	s << "JumpSaved";
 	return s.str();
 }
 
@@ -251,6 +261,10 @@ void JumpFalse::to_file(std::ofstream &outfile, uint8_t code) const {
 	outfile.write(reinterpret_cast<char*>(&b_index), sizeof(uint32_t));
 	uint32_t condition_index = condition.get_index();
 	outfile.write(reinterpret_cast<char*>(&condition_index), sizeof(uint32_t));
+}
+
+void JumpSaved::to_file(std::ofstream &outfile, uint8_t code) const {
+	outfile.write(reinterpret_cast<char*>(&code), sizeof(uint8_t));
 }
 
 Instruction* Instruction::from_file(std::ifstream &infile, uint8_t code) {
@@ -358,4 +372,8 @@ JumpFalse *JumpFalse::from_file(std::ifstream &infile) {
 	infile.read(reinterpret_cast<char*>(&condition), sizeof(uint32_t));
 
 	return new JumpFalse(block_index, Register(condition));
+}
+
+JumpSaved *JumpSaved::from_file(std::ifstream &) {
+	return new JumpSaved();
 }

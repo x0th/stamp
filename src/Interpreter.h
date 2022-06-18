@@ -48,7 +48,26 @@ public:
 		should_terminate_bb = true;
 	}
 
+	inline void save_next_bb() {
+		saved_bbs.push_back(current_bb + 1);
+	}
+
+	inline void jump_saved_bb() {
+		uint32_t bb_index = saved_bbs[saved_bbs.size() - 1];
+		saved_bbs.pop_back();
+		jump_bb(bb_index);
+	}
+
 	void put_object(std::string name, Object *object) {
+		scopes.contexts[scopes.contexts.size() - 1]->add(name, object);
+	}
+
+	void put_object_at_scope(std::string name, Object *object, uint32_t bb_index) {
+		for (unsigned long int i = 0; i < scopes.lexical_scopes.size(); i++) {
+			if (scopes.lexical_scopes[i]->starts_at(bb_index)) {
+				scopes.contexts[i]->add(name, object);
+			}
+		}
 		scopes.contexts[scopes.contexts.size() - 1]->add(name, object);
 	}
 
@@ -82,4 +101,5 @@ private:
 	Generator &generator;
 	std::vector<std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*>> reg_values;
 	Scopes scopes;
+	std::vector<uint32_t> saved_bbs;
 };

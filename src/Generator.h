@@ -34,9 +34,9 @@ public:
 		if (can_continue)
 			out += " (can continue : " + std::to_string(continue_dest) + ")";
 		if (can_break)
-			out += " (can break  : " + std::to_string(break_dest) + ")";
+			out += " (can break : " + std::to_string(break_dest) + ")";
 		if (can_return)
-			out += " (can return  : " + std::to_string(return_dest) + ")";
+			out += " (can return)";
 		return out;
 	}
 
@@ -44,8 +44,6 @@ public:
 	uint32_t get_continue_dest() { return continue_dest; }
 	void set_break_dest(uint32_t dest) { break_dest = dest; }
 	uint32_t get_break_dest() { return break_dest; }
-	void set_return_dest(uint32_t dest) { return_dest = dest; }
-	uint32_t get_return_dest() { return return_dest; }
 
 	void end_scope(uint32_t end) {
 		for (auto pb : pending_breaks)
@@ -54,6 +52,7 @@ public:
 	}
 
 	bool starts_at(uint32_t index) { return scope_beginning == (int32_t)index; }
+	bool contains(uint32_t index) { return scope_beginning >= (int32_t)index && (int32_t)index <= scope_end; }
 	bool ends_at(uint32_t index) { return scope_end == (int32_t)index; }
 
 	void add_pending_break(Jump *pb) { pending_breaks.push_back(pb); }
@@ -74,8 +73,6 @@ public:
 			outfile.write(reinterpret_cast<char*>(&continue_dest), sizeof(uint32_t));
 		if (can_break)
 			outfile.write(reinterpret_cast<char*>(&break_dest), sizeof(uint32_t));
-		if (can_return)
-			outfile.write(reinterpret_cast<char*>(&return_dest), sizeof(int32_t));
 		outfile.write(reinterpret_cast<char*>(&scope_end), sizeof(int32_t));
 	}
 
@@ -97,11 +94,6 @@ public:
 			infile.read(reinterpret_cast<char*>(&dest), sizeof(uint32_t));
 			ls->set_break_dest(dest);
 		}
-		if (ls->can_return) {
-			uint32_t dest;
-			infile.read(reinterpret_cast<char*>(&dest), sizeof(uint32_t));
-			ls->set_return_dest(dest);
-		}
 
 		int32_t end;
 		infile.read(reinterpret_cast<char*>(&end), sizeof(int32_t));
@@ -117,7 +109,6 @@ private:
 	int32_t scope_beginning, scope_end;
 	uint32_t continue_dest = { 0 };
 	uint32_t break_dest = { 0 };
-	uint32_t return_dest = { 0 };
 
 	std::vector<Jump*> pending_breaks;
 };

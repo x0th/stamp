@@ -57,21 +57,14 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> objec
 		return interpreter.fetch_global_object("False");
 }
 
-std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store_value(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> _stamp, Interpreter &interpreter) {
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store_value(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> _stamp, Interpreter &) {
 	auto stamp = std::get<std::string>(*_stamp);
 	if (object->get_type() == "Int") {
 		object->add_store<StoreInt>("value", std::stoi(stamp));
 	} else if (object->get_type() == "Char") {
 		object->add_store<StoreChar>("value", stamp[0]);
 	} else if (object->get_type() == "String") {
-		auto str_vec = std::get<Object*>(interpreter.fetch_global_object("Vec")->send("clone", object->get_type() + "_string_vec", nullptr, interpreter));
-		auto char_obj = interpreter.fetch_global_object("Char");
-		for (auto &c : stamp) {
-			auto this_char = std::get<Object*>(char_obj->send("clone", "::lit_" + c, nullptr, interpreter));
-			this_char->add_store<StoreChar>("value", stamp[0]);
-			auto this_char_reg = interpreter.store_at_next_available(this_char);
-			str_vec->send("push", this_char_reg, nullptr, interpreter);
-		}
+		object->add_store<StoreLiteral>("value", stamp);
 	} else {
 		// FIXME: Error!
 		Object *error = nullptr;
@@ -85,7 +78,7 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> get(O
 	if (!object->get_store("value")) {
 		object->add_store<StoreVec>("value", new std::vector<InternalStore*>());
 	}
-	auto index = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()))->send("value", nullptr, nullptr, interpreter);
+	auto index = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()))->send("value", std::nullopt, nullptr, interpreter);
 	auto value = (static_cast<StoreVec*>(object->get_store("value")))->unwrap()->at(std::get<int32_t>(index));
 #define __UNWRAP_STORE(t, c) \
 		case InternalStore::Type::t: return static_cast<c*>(value)->unwrap();
@@ -117,6 +110,9 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> clone
 	new_fn->add_default_stores(ds);
 	auto new_param_names = std::get<Object*>(clone_object(static_cast<StoreObject*>(object->get_store("param_names"))->unwrap(), "::param_names", interpreter));
 	new_fn->add_store<StoreObject>("param_names", new_param_names);
+	auto num_passed_params = std::get<Object*>(clone_object(interpreter.fetch_global_object("Int"), "::num_passed_params", interpreter));
+	store_value(num_passed_params, "0", interpreter);
+	new_fn->add_store<StoreObject>("num_passed_params", num_passed_params);
 
 	return new_fn;
 }
@@ -134,6 +130,27 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> pass_
 	return object;
 }
 
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> pass_param(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	uint32_t bb_index = static_cast<StoreRegister*>(object->get_store("body"))->unwrap();
+	auto param = interpreter.fetch_object(std::get<std::string>(*stamp));
+	auto num_passed_params_obj = static_cast<StoreObject*>(object->get_store("num_passed_params"))->unwrap();
+	auto param_names = static_cast<StoreObject*>(object->get_store("param_names"))->unwrap();
+	auto this_param_name_obj = std::get<Object*>(get(param_names, interpreter.store_at_next_available(num_passed_params_obj), interpreter));
+	auto this_param_name = std::get<std::string>(this_param_name_obj->send("value", std::nullopt, nullptr, interpreter));
+	interpreter.put_object_at_scope(this_param_name, param, bb_index);
+	// FIXME: change this when/if there is a better way to change the value
+	store_value(num_passed_params_obj, std::to_string(static_cast<StoreInt*>(num_passed_params_obj->get_store("value"))->unwrap() + 1), interpreter);
+	return object;
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> call(Object *object, std::optional<std::variant<Register, std::string, uint32_t>>, Interpreter &interpreter) {
+	// FIXME: verify that number of passed params is the same as number of param names
+	uint32_t bb_index = static_cast<StoreRegister*>(object->get_store("body"))->unwrap();
+	interpreter.save_next_bb();
+	interpreter.jump_bb(bb_index);
+	return object;
+}
+
 #define ENUMERATE_DEFAULT_STORES(DS) \
 	DS("clone", clone_object), \
 	DS("==", object_equals), \
@@ -143,7 +160,9 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> pass_
 	DS("push", push), \
     DS("clone_callable", clone_callable), \
 	DS("store_param", store_param), \
-	DS("pass_body", pass_body),
+	DS("pass_body", pass_body), \
+	DS("pass_param", pass_param), \
+	DS("call", call)
 
 #define __ADD_DEFAULT_STORE(fn, fn_name) { fn, fn_name }
 std::map<std::string, std::function<std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*>(Object*,std::optional<std::variant<Register, std::string, uint32_t>>,Interpreter&)>>

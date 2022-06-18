@@ -22,7 +22,8 @@ class Interpreter;
 	T(Store, 0x03)                           \
     T(Jump, 0x04)                            \
 	T(JumpTrue, 0x05)                        \
-	T(JumpFalse, 0x06)
+	T(JumpFalse, 0x06)                       \
+	T(JumpSaved, 0x07)
 
 class Instruction {
 public:
@@ -147,4 +148,14 @@ public:
 private:
 	uint32_t block_index;
 	Register condition;
+};
+
+class JumpSaved final : public Instruction {
+public:
+	JumpSaved() : Instruction(Type::JumpSaved) {}
+	static JumpSaved *from_file(std::ifstream &infile);
+
+	std::string to_string() const;
+	void execute(Interpreter &interpreter);
+	void to_file(std::ofstream &outfile, uint8_t code) const;
 };
