@@ -522,6 +522,7 @@ ASTNode *parse_else_tail() {
 			return parse_if();
 		case TokSListBegin: {
 			auto body = new ASTNode(Token{type: TokSList, value: ""});
+			next_token();
 			parse_statement_list(body);
 			return body;
 		}
