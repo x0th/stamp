@@ -91,8 +91,8 @@ private:
 
 class Store final : public Instruction {
 public:
-	Store(Register obj, std::string store_name, Register store) :
-		Instruction(Type::Store), obj(obj), store_name(store_name), store(store) {}
+	Store(Register obj, std::string store_name, Register store, bool is_mutable) :
+			Instruction(Type::Store), obj(obj), store_name(store_name), store(store), is_mutable(is_mutable) {}
 	static Store *from_file(std::ifstream &infile);
 
 	std::string to_string() const;
@@ -102,6 +102,7 @@ private:
 	Register obj;
 	std::string store_name;
 	Register store;
+	bool is_mutable = { false };
 };
 
 class Jump final : public Instruction {

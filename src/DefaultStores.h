@@ -60,11 +60,11 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> objec
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store_value(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> _stamp, Interpreter &) {
 	auto stamp = std::get<std::string>(*_stamp);
 	if (object->get_type() == "Int") {
-		object->add_store<StoreInt>("value", std::stoi(stamp));
+		object->add_store<StoreInt>("value", std::stoi(stamp), true);
 	} else if (object->get_type() == "Char") {
-		object->add_store<StoreChar>("value", stamp[0]);
+		object->add_store<StoreChar>("value", stamp[0], true);
 	} else if (object->get_type() == "String") {
-		object->add_store<StoreLiteral>("value", stamp);
+		object->add_store<StoreLiteral>("value", stamp, true);
 	} else {
 		// FIXME: Error!
 		Object *error = nullptr;
@@ -76,7 +76,7 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> get(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
 	// FIXME: maybe move to start of interpreter (or something similar), otherwise will have to add to all Vec functions
 	if (!object->get_store("value")) {
-		object->add_store<StoreVec>("value", new std::vector<InternalStore*>());
+		object->add_store<StoreVec>("value", new std::vector<InternalStore*>(), true);
 	}
 	auto index = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()))->send("value", std::nullopt, nullptr, interpreter);
 	auto value = (static_cast<StoreVec*>(object->get_store("value")))->unwrap()->at(std::get<int32_t>(index));
@@ -94,10 +94,10 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> get(O
 }
 
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> push(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
-	auto store = static_cast<InternalStore*>(new StoreObject(std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()))));
+	auto store = static_cast<InternalStore*>(new StoreObject(std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index())), true));
 	// FIXME: maybe move to start of interpreter (or something similar), otherwise will have to add to all Vec functions
 	if (!object->get_store("value")) {
-		object->add_store<StoreVec>("value", new std::vector<InternalStore*>());
+		object->add_store<StoreVec>("value", new std::vector<InternalStore*>(), true);
 	}
 	(static_cast<StoreVec*>(object->get_store("value")))->unwrap()->push_back(store);
 	return object;
@@ -109,10 +109,10 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> clone
 	std::set<std::string> ds = { "clone_callable" };
 	new_fn->add_default_stores(ds);
 	auto new_param_names = std::get<Object*>(clone_object(static_cast<StoreObject*>(object->get_store("param_names"))->unwrap(), "::param_names", interpreter));
-	new_fn->add_store<StoreObject>("param_names", new_param_names);
+	new_fn->add_store<StoreObject>("param_names", new_param_names, true);
 	auto num_passed_params = std::get<Object*>(clone_object(interpreter.fetch_global_object("Int"), "::num_passed_params", interpreter));
 	store_value(num_passed_params, "0", interpreter);
-	new_fn->add_store<StoreObject>("num_passed_params", num_passed_params);
+	new_fn->add_store<StoreObject>("num_passed_params", num_passed_params, true);
 
 	return new_fn;
 }
@@ -126,7 +126,7 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store
 }
 
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> pass_body(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &) {
-	object->add_store<StoreRegister>("body", std::get<uint32_t>(*stamp));
+	object->add_store<StoreRegister>("body", std::get<uint32_t>(*stamp), false);
 	return object;
 }
 

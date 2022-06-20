@@ -14,7 +14,7 @@ let s:stamp_keywords = {
 	\ , 'stampRepeat' : ["while"]
 	\ , 'stampExec' : ["return", "break", "continue"]
 	\ , 'stampBool' : ["True", "False"]
-	\ , 'stampKeyword' : ["fn"]
+	\ , 'stampKeyword' : ["fn", "mut"]
 	\ , }
 
 function! s:syntax_keyword(dict)

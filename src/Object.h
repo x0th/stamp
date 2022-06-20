@@ -41,16 +41,18 @@ public:
 #undef __STORE_TYPES
 	};
 
-	InternalStore(Type type) : type(type) {}
+	InternalStore(Type type, bool is_mutable) : type(type), _is_mutable(is_mutable) {}
 
 	Type get_type() const { return type; }
+	bool is_mutable() const { return _is_mutable; }
 private:
 	Type type;
+	bool _is_mutable;
 };
 
 class StoreObject : public InternalStore {
 public:
-	StoreObject(Object *object) : InternalStore(Type::StoreObject), object(object) {}
+	StoreObject(Object *object, bool is_mutable) : InternalStore(Type::StoreObject, is_mutable), object(object) {}
 
 	Object *unwrap() const { return object; }
 private:
@@ -59,7 +61,7 @@ private:
 
 class StoreLiteral : public InternalStore {
 public:
-	StoreLiteral(std::string literal) : InternalStore(Type::StoreLiteral), literal(literal) {}
+	StoreLiteral(std::string literal, bool is_mutable) : InternalStore(Type::StoreLiteral, is_mutable), literal(literal) {}
 
 	std::string unwrap() const { return literal; }
 private:
@@ -68,7 +70,7 @@ private:
 
 class StoreInt : public InternalStore {
 public:
-	StoreInt(int32_t integer) : InternalStore(Type::StoreInt), integer(integer) {}
+	StoreInt(int32_t integer, bool is_mutable) : InternalStore(Type::StoreInt, is_mutable), integer(integer) {}
 
 	int32_t unwrap() const { return integer; }
 private:
@@ -77,7 +79,7 @@ private:
 
 class StoreChar : public InternalStore {
 public:
-	StoreChar(char c) : InternalStore(Type::StoreChar), c(c) {}
+	StoreChar(char c, bool is_mutable) : InternalStore(Type::StoreChar, is_mutable), c(c) {}
 
 	char unwrap() const { return c; }
 private:
@@ -86,7 +88,7 @@ private:
 
 class StoreVec : public InternalStore {
 public:
-	StoreVec(std::vector<InternalStore*> *vec) : InternalStore(Type::StoreVec), vec(vec) {}
+	StoreVec(std::vector<InternalStore*> *vec, bool is_mutable) : InternalStore(Type::StoreVec, is_mutable), vec(vec) {}
 
 	std::vector<InternalStore*> *unwrap() { return vec; }
 private:
@@ -95,7 +97,7 @@ private:
 
 class StoreRegister : public InternalStore {
 public:
-	StoreRegister(uint32_t reg_index) : InternalStore(Type::StoreRegister), reg_index(reg_index) {}
+	StoreRegister(uint32_t reg_index, bool is_mutable) : InternalStore(Type::StoreRegister, is_mutable), reg_index(reg_index) {}
 
 	uint32_t unwrap() { return reg_index; }
 private:
@@ -113,7 +115,11 @@ public:
 
 	template<class T, typename... Args>
 	void add_store(std::string store_name, Args&&... args) {
-		stores[store_name] = static_cast<InternalStore*>(new T(std::forward<Args>(args)...));
+		if (stores.count(store_name) && !stores[store_name]->is_mutable()) {
+			// FIXME: Error!
+		} else {
+			stores[store_name] = static_cast<InternalStore*>(new T(std::forward<Args>(args)...));
+		}
 	}
 
 	InternalStore *get_store(std::string store_name) {

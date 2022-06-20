@@ -18,7 +18,7 @@ String = Object^;
 String store_value = default;
 
 Callable = Object^;
-Callable param_names = Vec^;
+mut Callable param_names = Vec^;
 Callable clone_callable = default;
 Callable store_param = default;
 Callable pass_body = default;

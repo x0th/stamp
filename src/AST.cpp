@@ -147,7 +147,8 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			if (!rhs.has_value()) {
 				// FIXME: Error!
 			}
-			generator.append<Store>(*obj, children[1]->token.value, *rhs);
+			bool is_mutable = children.size() == 4 && children[3]->token.type == TokMut;
+			generator.append<Store>(*obj, children[1]->token.value, *rhs, is_mutable);
 			return {};
 		}
 		case TokSend: {

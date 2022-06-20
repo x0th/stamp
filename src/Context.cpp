@@ -33,7 +33,7 @@ Context *Context::make_global_context() {
 
 	// Object
 	auto object = new Object(nullptr, "Object");
-	object->add_store<StoreLiteral>("type", "Object");
+	object->add_store<StoreLiteral>("type", "Object", false);
 	std::set<std::string> object_stores = {"clone", "==", "!="};
 	object->add_default_stores(object_stores);
 

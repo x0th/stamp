@@ -41,14 +41,14 @@ void Store::execute(Interpreter &interpreter) {
 		auto st_register = interpreter.at(store.get_index());
 		auto st = std::get_if<Object*>(&st_register);
 		if (st)
-			(*object)->add_store<StoreObject>(store_name, *st);
+			(*object)->add_store<StoreObject>(store_name, *st, is_mutable);
 		else {
 			auto store = std::get<std::string>(st_register);
 			if (store == "default") {
 				std::set<std::string> dstores = {store_name};
 				(*object)->add_default_stores(dstores);
 			} else
-				(*object)->add_store<StoreLiteral>(store_name, store);
+				(*object)->add_store<StoreLiteral>(store_name, store, is_mutable);
 		}
 	} else {
 		// FIXME: Error!
@@ -142,6 +142,8 @@ std::string Send::to_string() const {
 std::string Store::to_string() const {
 	std::stringstream s;
 	s << "Store r" << obj.get_index() << ", " << store_name << ", r" << store.get_index();
+	if (is_mutable)
+		s << ", mut";
 	return s.str();
 }
 
@@ -231,11 +233,13 @@ void Store::to_file(std::ofstream &outfile, uint8_t code) const {
 	uint32_t store_size = store_name.size();
 	const char *store_str = store_name.c_str();
 	uint32_t store_index = store.get_index();
+	uint8_t is_mut = is_mutable;
 	outfile.write(reinterpret_cast<char*>(&code), sizeof(uint8_t));
 	outfile.write(reinterpret_cast<char*>(&obj_index), sizeof(uint32_t));
 	outfile.write(reinterpret_cast<char*>(&store_size), sizeof(uint32_t));
 	outfile.write(store_str, store_size);
 	outfile.write(reinterpret_cast<char*>(&store_index), sizeof(uint32_t));
+	outfile.write(reinterpret_cast<char*>(&is_mut), sizeof(uint8_t));
 }
 
 void Jump::to_file(std::ofstream &outfile, uint8_t code) const {
@@ -345,8 +349,10 @@ Store *Store::from_file(std::ifstream &infile) {
 	store_name[store_size] = '\0';
 	uint32_t store;
 	infile.read(reinterpret_cast<char*>(&store), sizeof(uint32_t));
+	uint8_t is_mutable;
+	infile.read(reinterpret_cast<char*>(&is_mutable), sizeof(uint8_t));
 
-	return new Store(dst, store_name, store);
+	return new Store(dst, store_name, store, is_mutable);
 }
 
 Jump *Jump::from_file(std::ifstream &infile) {

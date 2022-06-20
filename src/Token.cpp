@@ -51,6 +51,7 @@ std::string token_readable(Token *token) {
 		case TokStarSlash: return "Multiline comment end";
 		case TokBreak: return "break";
 		case TokContinue: return "continue";
+		case TokMut: return "mut";
 	}
 	return "";
 }

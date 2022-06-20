@@ -134,6 +134,7 @@ void parse_statement_list(ASTNode *s) {
 		case TokMessage:
 		case TokBreak:
 		case TokContinue:
+		case TokMut:
 		{
 			st = parse_statement();
 			if (st) {
@@ -203,6 +204,28 @@ ASTNode *parse_statement() {
 //			next_token(); // [
 //			return parse_message_tail(parse_list(out));
 //		}
+		case TokMut: {
+			auto mut_indicator = new ASTNode(tok);
+			next_token();
+			ASTNode *object;
+			if (tok.type == TokObject || tok.type == TokInt ||
+				tok.type == TokChar || tok.type == TokString) {
+				object = new ASTNode(tok);
+			} else if (tok.type == TokValue) {
+				object = new ASTNode(Token { type: TokObject, value: tok.value });
+			} else {
+				throw("mut keyword is not applicable to " + token_readable(&tok));
+			}
+
+			next_token(); // obj
+
+			if (tok.type == TokValue) {
+				auto full_statement = parse_statement_tail(object);
+				full_statement->get_children().push_back(mut_indicator);
+				return full_statement;
+			} else
+				throw error_msg("mut keyword can only be used in a store statement.");
+		}
 		case TokFn: {
 			auto fn = new ASTNode(tok);
 			next_token(); // fn
