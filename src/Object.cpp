@@ -40,7 +40,25 @@ std::string Object::to_string() const {
 		s << "True";
 	else if (type == "False")
 		s << "False";
-	else
+	else if (stores.count("value")) {
+		s << const_cast<const InternalStore*>(stores.at("value"))->to_string();
+	} else
 		s << type << "-" << std::hex << hash;
 	return s.str();
+}
+
+std::string InternalStore::to_string() const {
+#define __UNWRAP_STORE(t, c) \
+		case InternalStore::Type::t: return static_cast<c const&>(*this).to_string();
+
+	switch (type) {
+		ENUMERATE_STORE_TYPES(__UNWRAP_STORE);
+		default:
+			return "";
+	}
+#undef __UNWRAP_STORE
+}
+
+std::string StoreObject::to_string() const {
+	return object->to_string();
 }

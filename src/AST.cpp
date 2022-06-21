@@ -174,7 +174,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 				// FIXME: Error!
 			}
 			if (children[1]->children.size() != 0) {
-				if (children[1]->get_children()[0]->token.type != TokSend) {
+				if (children[1]->get_children()[0]->token.type == TokObject || children[1]->get_children()[0]->token.type == TokValue) {
 					std::optional<std::string> stamp = children[1]->get_children()[0]->token.value;
 					auto dst = generator.next_register();
 					generator.append<Send>(dst, *obj, children[1]->token.value, stamp);

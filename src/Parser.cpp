@@ -299,7 +299,7 @@ ASTNode *parse_statement_tail(ASTNode *object) {
 			next_token();
 			children.push_back(parse_rhs(children[1]));
 
-			// traverse the Send chain to check if the first send was a clone
+			// traverse the TokSend chain to check if the first send was a clone
 			// if so, add the name to it
 			auto rhs = children[2];
 			while (rhs->token.type == TokSend && rhs->get_children()[0]->token.type == TokSend) {
@@ -397,7 +397,10 @@ ASTNode *parse_statement_rhs() {
 			return parse_message_tail(object);
 		}
 		case TokSqBracketL: {
-			return parse_message_tail(nullptr);
+			auto vec = new ASTNode(Token { type: TokVec, value: "" });
+			next_token(); // [
+			parse_vec(vec);
+			return parse_message_tail(vec);
 		}
 		case TokCloseParend:
 			return nullptr;
@@ -609,7 +612,8 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 			auto vec = new ASTNode(Token { type: TokVec, value: "" });
 			next_token(); // [
 			parse_vec(vec);
-			return parse_message_tail(vec);
+			previous_message->get_children()[1]->get_children().push_back(vec);
+			return parse_message_tail(previous_message);
 		}
 		case TokMessage: {
 			vector<ASTNode *> children;
