@@ -385,6 +385,7 @@ ASTNode *parse_statement_rhs() {
 	switch (tok.type) {
 		case TokInt:
 		case TokChar:
+		case TokString:
 		case TokObject: {
 			auto object = new ASTNode(tok);
 			next_token(); // obj

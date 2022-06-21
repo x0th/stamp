@@ -24,3 +24,18 @@ Callable store_param = default;
 Callable pass_body = default;
 Callable pass_param = default;
 Callable call = default;
+
+Operators = Object^;
+mut Operators value = [];
+Operators.value.push ["%", "*", "/"];
+Operators.value.push ["+", "-"];
+Operators.value.push ["<<", ">>"];
+Operators.value.push ["<", "<=", ">", ">="];
+Operators.value.push ["!=", "=="];
+Operators.value.push ["&"];
+Operators.value.push ["><"];
+Operators.value.push ["|"];
+Operators.value.push ["&&"];
+Operators.value.push ["||"];
+Operators.value.push ["!"];
+Operators.value.push ["return"];
