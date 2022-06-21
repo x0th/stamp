@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <string>
 #include <set>
 #include <optional>
@@ -115,7 +116,7 @@ public:
 
 	template<class T, typename... Args>
 	void add_store(std::string store_name, Args&&... args) {
-		if (stores.count(store_name) && !stores[store_name]->is_mutable()) {
+		if (!stores.empty() && stores.count(store_name) && !stores[store_name]->is_mutable()) {
 			// FIXME: Error!
 		} else {
 			stores[store_name] = static_cast<InternalStore*>(new T(std::forward<Args>(args)...));
@@ -123,7 +124,10 @@ public:
 	}
 
 	InternalStore *get_store(std::string store_name) {
-		return stores[store_name];
+		if (stores.count(store_name))
+			return stores[store_name];
+		else
+			return nullptr;
 	}
 
 	void add_default_stores(std::set<std::string> &stores) {

@@ -52,6 +52,7 @@ std::string token_readable(Token *token) {
 		case TokBreak: return "break";
 		case TokContinue: return "continue";
 		case TokMut: return "mut";
+		case TokVec: return "Vec";
 	}
 	return "";
 }

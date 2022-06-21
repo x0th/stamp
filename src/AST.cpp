@@ -138,6 +138,23 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			// FIXME: error!
 			break;
 		}
+		case TokVec: {
+			auto vec = generator.next_register();
+			generator.append<Load>(vec, "Vec");
+
+			std::optional<std::string> clone_stamp = "::lit_vec";
+			auto dst = generator.next_register();
+			generator.append<Send>(dst, vec, "clone", clone_stamp);
+
+			for (auto val : children) {
+				auto val_reg = val->generate_bytecode(generator);
+				auto temp = generator.next_register();
+				generator.append<Send>(temp, dst, "push", val_reg);
+				dst = temp;
+			}
+
+			return dst;
+		}
 		case TokStore: {
 			auto obj = children[0]->generate_bytecode(generator);
 			if (!obj.has_value()) {
