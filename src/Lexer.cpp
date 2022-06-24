@@ -12,7 +12,7 @@
 
 #include "Lexer.h"
 #include "Token.h"
-#include "Parser.h"
+#include "Error.h"
 
 char token_image[MAX_TOKEN_LEN];
 
@@ -146,7 +146,8 @@ Token scan(std::string &raw_string, long unsigned int *position, std::string &fi
 			c = next_char;
 			next_char;
 			if (c != '\'')
-				throw error_msg("Length of character is not valid.");
+				// FIXME: change to hinting error when we implement error recovery
+				terminating_error(StampError::LexingError, file + ":" + std::to_string(line) + ":" + std::to_string(column) + ": Length of character is not valid.");
 			return tok;
 		}
 		case '\"': {
@@ -183,7 +184,8 @@ Token scan(std::string &raw_string, long unsigned int *position, std::string &fi
 				}
 				token_image[i++] = c;
 				if (i >= MAX_TOKEN_LEN)
-					throw error_msg("Maximum token length exceeded.");
+					// FIXME: change to hinting error when we implement error recovery
+					terminating_error(StampError::LexingError, file + ":" + std::to_string(line) + ":" + std::to_string(column) + ": Maximum token length exceeded.");
 				c = next_char;
 			} while (c != '\"');
 			token_image[i] = '\0';
@@ -196,7 +198,8 @@ Token scan(std::string &raw_string, long unsigned int *position, std::string &fi
 				do {
 					token_image[i++] = c;
 					if (i >= MAX_TOKEN_LEN)
-						throw error_msg("Maximum token length exceeded.");
+						// FIXME: change to hinting error when we implement error recovery
+						terminating_error(StampError::LexingError, file + ":" + std::to_string(line) + ":" + std::to_string(column) + ": Maximum token length exceeded.");
 					c = next_char;
 				} while (isdigit(c));
 				token_image[i] = '\0';
@@ -205,7 +208,8 @@ Token scan(std::string &raw_string, long unsigned int *position, std::string &fi
 				do {
 					token_image[i++] = c;
 					if (i >= MAX_TOKEN_LEN)
-						throw error_msg("Maximum token length exceeded.");
+						// FIXME: change to hinting error when we implement error recovery
+						terminating_error(StampError::LexingError, file + ":" + std::to_string(line) + ":" + std::to_string(column) + ": Maximum token length exceeded.");
 					c = next_char;
 				} while (isalpha(c) || isdigit(c) || c == '_');
 				token_image[i] = '\0';

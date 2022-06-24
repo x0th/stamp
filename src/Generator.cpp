@@ -8,6 +8,7 @@
 
 #include "Generator.h"
 #include "Register.h"
+#include "Error.h"
 
 Register Generator::next_register() {
 	return Register(register_number++);
@@ -82,8 +83,7 @@ void Generator::read_from_file(std::string &filename) {
 		else if (bb)
 			bb->add_instruction(Instruction::from_file(infile, first_byte));
 		else {
-			// FIXME: Error!
-			break;
+			terminating_error(StampError::FileParsingError, "Unexpected first byte of file: " + std::to_string(first_byte) + ". The file might not be an object-stamp file.");
 		}
 	}
 

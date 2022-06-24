@@ -6,15 +6,12 @@
 
 #include "Parser.h"
 #include "Lexer.h"
+#include "Error.h"
 
-#include <iostream>
-
-using namespace std;
-
-vector<string> file;
-string filename;
+std::vector<std::string> file;
+std::string filename;
 long unsigned int line_number;
-string raw_str;
+std::string raw_str;
 long unsigned int position;
 Token tok = Token(Token::Program, "", 0, 0);
 
@@ -36,8 +33,10 @@ ASTNode *parse_else_tail();
 ASTNode *parse_while();
 ASTNode *parse_vec(ASTNode *list);
 
-string error_msg(string error) {
-	string out;
+// FIXME: change all errors to be hinting errors when we implement error recovery
+
+std::string error_msg(std::string error) {
+	std::string out;
 	if (filename != "") {
 		out += filename + ":" + std::to_string(line_number+1) + ":"; 
 	} else {
@@ -99,7 +98,7 @@ ASTNode *parse_program() {
 	try {
 		next_token();
 		parse_statement_list(s);
-	} catch (string &msg) {
+	} catch (std::string &msg) {
 		terminating_error(StampError::ParsingError, msg);
 	}
 
@@ -156,7 +155,7 @@ void parse_statement_list(ASTNode *s) {
 	}
 }
 
-bool is_operator(string &s) {
+bool is_operator(std::string &s) {
 //	auto lst = global_context->get("Operators")->get_obj()->get_stores()["table"]->get_obj()->get_stores()["value"]->get_list();
 //
 //	for (long unsigned int i = 0; i < lst->size(); i++) {
@@ -236,7 +235,7 @@ ASTNode *parse_statement() {
 				throw error_msg("Message at the start of statement was not an operator.");
 			}
 
-			vector<ASTNode *> children;
+			std::vector<ASTNode *> children;
 			auto msg = tok;
 			next_token();
 			children.push_back(parse_statement());
@@ -284,7 +283,7 @@ ASTNode *parse_statement_tail(ASTNode *object) {
 			return parse_message_tail(object);
 		}
 		case Token::Value: {
-			vector<ASTNode *>children;
+			std::vector<ASTNode *> children;
 			children.push_back(object);
 			children.push_back(new ASTNode(tok));
 			match(Token::Store); // =
@@ -568,7 +567,7 @@ ASTNode *parse_while() {
 	}
 }
 
-inline bool swap_precedence(string &old_operator, string &new_operator) {
+inline bool swap_precedence(std::string &old_operator, std::string &new_operator) {
 //	int precedence_old = -1, precedence_new = -1;
 //	auto lst = global_context->get("Operators")->get_obj()->get_stores()["table"]->get_obj()->get_stores()["value"]->get_list();
 //
@@ -608,7 +607,7 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 			return parse_message_tail(previous_message);
 		}
 		case Token::Message: {
-			vector<ASTNode *> children;
+			std::vector<ASTNode *> children;
 			children.push_back(previous_message);
 			children.push_back(new ASTNode(tok));
 			next_token();
@@ -650,7 +649,7 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 	};
 }
 
-ASTNode *parse(string &fname, vector<string> &f) {
+ASTNode *parse(std::string &fname, std::vector<std::string> &f) {
 	file = f;
 	filename = fname;
 	line_number = 0;

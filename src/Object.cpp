@@ -26,10 +26,10 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*>
 		if (prototype)
 			return prototype->send(message, stamp, this, interpreter);
 		else {
-			// FIXME: Error!
+			terminating_error(StampError::ExecutionError, message + " store not found in " + (forwarder ? forwarder->get_type() : type) + ".");
 		}
 	}
-	// FIXME: Error!
+	terminating_error(StampError::ExecutionError, message + " store not found in " + (forwarder ? forwarder->get_type() : type) + ".");
 	Object *error = nullptr;
 	return error;
 }

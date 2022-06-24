@@ -7,6 +7,7 @@
 #include <iostream>
 
 #include "Interpreter.h"
+#include "Error.h"
 
 void Interpreter::run() {
 	uint32_t lexical_scope_index = 0;
@@ -52,7 +53,7 @@ Object *Interpreter::fetch_object(std::string &name) {
 		if (obj)
 			return obj;
 	}
-	// FIXME: Error!
+	terminating_error(StampError::ExecutionError, "Object not in scope: " + name + ".");
 	return nullptr;
 }
 

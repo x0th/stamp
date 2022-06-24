@@ -9,6 +9,7 @@
 #include "AST.h"
 #include "Generator.h"
 #include "Register.h"
+#include "Error.h"
 
 #define WHILE_SCOPE_FLAGS SCOPE_CAN_CONTINUE | SCOPE_CAN_BREAK
 
@@ -125,7 +126,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 					return {};
 				}
 			}
-			// FIXME: error!
+			terminating_error(StampError::BytecodeGenerationError, token.position() + ": break used outside of statement that can break.");
 			break;
 		}
 		case Token::Continue: {
@@ -135,7 +136,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 					generator.append<Jump>(lscope->get_continue_dest());
 				}
 			}
-			// FIXME: error!
+			terminating_error(StampError::BytecodeGenerationError, token.position() + ": continue used outside of statement that can break.");
 			break;
 		}
 		case Token::Vec: {
@@ -158,11 +159,11 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 		case Token::Store: {
 			auto obj = children[0]->generate_bytecode(generator);
 			if (!obj.has_value()) {
-				// FIXME: Error!
+				terminating_error(StampError::BytecodeGenerationError, token.position() + ": attempted to store to not an object.");
 			}
 			auto rhs = children[2]->generate_bytecode(generator);
 			if (!rhs.has_value()) {
-				// FIXME: Error!
+				terminating_error(StampError::BytecodeGenerationError, token.position() + ": attempted to store not an object.");
 			}
 			bool is_mutable = children.size() == 4 && children[3]->token.type == Token::Mut;
 			generator.append<Store>(*obj, children[1]->token.value, *rhs, is_mutable);
@@ -171,7 +172,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 		case Token::Send: {
 			auto obj = children[0]->generate_bytecode(generator);
 			if (!obj.has_value()) {
-				// FIXME: Error!
+				terminating_error(StampError::BytecodeGenerationError, token.position() + ": attempted to send to not an Object.");
 			}
 			if (children[1]->children.size() != 0) {
 				if (children[1]->get_children()[0]->token.type == Token::Object || children[1]->get_children()[0]->token.type == Token::Value) {
@@ -199,7 +200,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 		}
 		ENUMERATE_BASIC_OBJECTS(__GENERATE_BASIC_OBJECT)
 		default: {
-			// FIXME: Error!
+			terminating_error(StampError::BytecodeGenerationError,  "No bytecode generation implemented for " + token.token_str() + " at " + token.position());
 		}
 	}
 	return {};
@@ -209,7 +210,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 
 std::string ASTNode::to_string_indent(std::string indent) {
 	std::stringstream s;
-	s << indent << token.token_str() << " " << token.position() << "\n";
+	s << indent << token.token_str() << "\n";
 	for (auto &c : children) {
 		s << c->to_string_indent(indent + "  ");
 	}

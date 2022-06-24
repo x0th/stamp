@@ -15,6 +15,7 @@
 #include "Object.h"
 #include "Register.h"
 #include "Interpreter.h"
+#include "Error.h"
 
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> clone_object(Object *original, std::optional<std::variant<Register, std::string, uint32_t>> name, Interpreter&interpreter) {
 	std::string new_type = std::get<std::string>(*name);
@@ -66,9 +67,7 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store
 	} else if (object->get_type() == "String") {
 		object->add_store<StoreLiteral>("value", stamp, true);
 	} else {
-		// FIXME: Error!
-		Object *error = nullptr;
-		return error;
+		terminating_error(StampError::DefaultStoreError, "store_value is not implemented for " + object->get_type());
 	}
 	return object;
 }
@@ -85,11 +84,11 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> get(O
 	switch(value->get_type()) {
 			ENUMERATE_STORE_TYPES(__UNWRAP_STORE)
 		default: {
-			// FIXME: Error!
-			Object *error = nullptr;
-			return error;
+			terminating_error(StampError::DefaultStoreError, "Unable to unwrap store.");
 		}
 	}
+	Object *error = nullptr;
+	return error;
 #undef __UNWRAP_STORE
 }
 

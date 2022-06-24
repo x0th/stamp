@@ -58,5 +58,7 @@ std::string Token::token_readable() const {
 }
 
 std::string Token::position() const {
-	return file + ":" + std::to_string(line) + ":" + std::to_string(column);
+	if (file != "")
+		return file + ":" + std::to_string(line) + ":" + std::to_string(column);
+	return std::to_string(line) + ":" + std::to_string(column);
 }

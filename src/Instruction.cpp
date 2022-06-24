@@ -11,6 +11,7 @@
 #include "Instruction.h"
 #include "Register.h"
 #include "Interpreter.h"
+#include "Error.h"
 
 void Instruction::execute(Interpreter &interpreter) {
 #define __INSTRUCTION_TYPES(t, b)                       \
@@ -21,8 +22,7 @@ void Instruction::execute(Interpreter &interpreter) {
 	switch(type) {
 		ENUMERATE_INSTRUCTION_TYPES(__INSTRUCTION_TYPES)
 		default:
-			// FIXME: Error!
-			break;
+			terminating_error(StampError::ExecutionError, "No execution implementation for instruction.");
 	}
 
 #undef __INSTRUCTION_TYPES
@@ -51,7 +51,7 @@ void Store::execute(Interpreter &interpreter) {
 				(*object)->add_store<StoreLiteral>(store_name, store, is_mutable);
 		}
 	} else {
-		// FIXME: Error!
+		terminating_error(StampError::ExecutionError, "Attempted to store to not an object.");
 	}
 }
 
@@ -60,7 +60,7 @@ void Send::execute(Interpreter &interpreter) {
 	if (object) {
 		interpreter.store_at(dst.get_index(), (*object)->send(msg, stamp, nullptr, interpreter));
 	} else {
-		// FIXME: Error!
+		terminating_error(StampError::ExecutionError, "Attempted to send to not an object.");
 	}
 }
 
@@ -93,7 +93,7 @@ void Instruction::dealloc() {
 	switch(type) {
 		ENUMERATE_INSTRUCTION_TYPES(__INSTRUCTION_TYPES)
 		default: {
-			// FIXME: Error!
+			terminating_error(StampError::ExecutionError, "No deallocation implemented for instruction.");
 		}
 	}
 
@@ -179,7 +179,7 @@ void Instruction::to_file(std::ofstream &outfile) const {
 	switch(type) {
 		ENUMERATE_INSTRUCTION_TYPES(__INSTRUCTION_TYPES)
 		default: {
-			// FIXME: Error!
+			terminating_error(StampError::ExecutionError, "No to_file implemented for bytecode instruction.");
 		}
 	}
 
@@ -279,7 +279,7 @@ Instruction* Instruction::from_file(std::ifstream &infile, uint8_t code) {
 	switch (code) {
 		ENUMERATE_INSTRUCTION_TYPES(__INSTRUCTION_TYPES)
 		default: {
-			// Fixme: Error!
+			terminating_error(StampError::ExecutionError, "Unrecognized instruction code: " + std::to_string(code) + ".");
 			return nullptr;
 		}
 	}
@@ -334,7 +334,7 @@ Send *Send::from_file(std::ifstream &infile) {
 		std::optional<uint32_t> st = bb_index;
 		return new Send(dst, obj, msg, st);
 	} else {
-		// FIXME: Error!
+		terminating_error(StampError::FileParsingError, "Unrecognized stamp type: " + std::to_string(stamp_type) + ".");
 		return nullptr;
 	}
 }

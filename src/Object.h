@@ -16,6 +16,7 @@
 #include <sstream>
 
 #include "Register.h"
+#include "Error.h"
 
 class Object;
 class StoreObject;
@@ -136,7 +137,7 @@ public:
 	template<class T, typename... Args>
 	void add_store(std::string store_name, Args&&... args) {
 		if (!stores.empty() && stores.count(store_name) && !stores[store_name]->is_mutable()) {
-			// FIXME: Error!
+			terminating_error(StampError::ExecutionError, "Cannot assign to immutable store " + store_name + " in object " + type + ".");
 		} else {
 			stores[store_name] = static_cast<InternalStore*>(new T(std::forward<Args>(args)...));
 		}
