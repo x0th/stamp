@@ -45,6 +45,8 @@ public:
 	void execute(Interpreter &interpreter);
 
 	void to_file(std::ofstream &outfile) const;
+
+	uint32_t biggest_reg = { 0 };
 private:
 	Type type;
 };

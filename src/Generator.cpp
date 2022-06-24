@@ -82,13 +82,18 @@ void Generator::read_from_file(std::string &filename) {
 		infile.read(reinterpret_cast<char*>(&first_byte), sizeof(uint8_t));
 		if (first_byte == 0xbb)
 			bb = add_basic_block();
-		else if (first_byte == 0xaa)
+		else if (first_byte == 0xaa) {
 			scopes.push_back(LexicalScope::from_file(infile));
-		else if (first_byte == 0x00)
+			num_scopes++;
+		} else if (first_byte == 0x00)
 			break;
-		else if (bb)
-			bb->add_instruction(Instruction::from_file(infile, first_byte));
-		else {
+		else if (bb) {
+			auto instruction = Instruction::from_file(infile, first_byte);
+			bb->add_instruction(instruction);
+			auto biggest_reg = instruction->biggest_reg;
+			if (biggest_reg > register_number)
+				register_number = biggest_reg + 1;
+		} else {
 			terminating_error(StampError::FileParsingError, "Unexpected first byte of file: " + std::to_string(first_byte) + ". The file might not be an object-stamp file.");
 		}
 	}

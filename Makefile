@@ -5,7 +5,7 @@ CFLAGS = -std=c++17 -Wall -Wextra -Wnoexcept -Wno-maybe-uninitialized -O2 -DNDEB
 C_FILES = $(wildcard src/*.cpp)
 O_FILES = $(C_FILES:src/%.cpp=src/%.o)
 
-all: stamp
+all: stamp prelude
 
 debug: CFLAGS = -std=c++17 -Wall -Wextra -Wnoexcept -g -DDEBUG
 debug: stamp
@@ -15,6 +15,9 @@ stamp: $(O_FILES)
 
 src/%.o: src/%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
+
+prelude:
+	./stamp -o prelude.stamp
 
 clean:
 	-rm -f $(O_FILES)

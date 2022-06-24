@@ -296,7 +296,9 @@ Load *Load::from_file(std::ifstream &infile) {
 	infile.read(reinterpret_cast<char*>(&value), size);
 	value[size] = '\0';
 
-	return new Load(Register(index), value);
+	auto load = new Load(Register(index), value);
+	load->biggest_reg = index;
+	return load;
 }
 
 Send *Send::from_file(std::ifstream &infile) {
@@ -310,16 +312,21 @@ Send *Send::from_file(std::ifstream &infile) {
 	infile.read(reinterpret_cast<char*>(&msg), msg_size);
 	msg[msg_size] = '\0';
 
+	auto biggest_reg_so_far = dst > obj ? dst : obj;
+
+	Send *send;
 	uint8_t stamp_type;
 	infile.read(reinterpret_cast<char*>(&stamp_type), sizeof(uint8_t));
 	if (stamp_type == 0x00) {
 		std::optional<uint32_t> st = std::nullopt;
-		return new Send(dst, obj, msg, st);
+		send = new Send(dst, obj, msg, st);
+		send->biggest_reg = biggest_reg_so_far;
 	} else if (stamp_type == 0x01) {
 		uint32_t r_index;
 		infile.read(reinterpret_cast<char*>(&r_index), sizeof(uint32_t));
 		std::optional<Register> st = Register(r_index);
-		return new Send(dst, obj, msg, st);
+		send = new Send(dst, obj, msg, st);
+		send->biggest_reg = biggest_reg_so_far > r_index ? biggest_reg_so_far : r_index;
 	} else if (stamp_type == 0x02) {
 		uint32_t st_size;
 		infile.read(reinterpret_cast<char*>(&st_size), sizeof(uint32_t));
@@ -327,16 +334,19 @@ Send *Send::from_file(std::ifstream &infile) {
 		infile.read(reinterpret_cast<char*>(&stamp), st_size);
 		stamp[st_size] = '\0';
 		std::optional<std::string> st = std::string(stamp);
-		return new Send(dst, obj, msg, st);
+		send = new Send(dst, obj, msg, st);
+		send->biggest_reg = biggest_reg_so_far;
 	} else if (stamp_type == 0x03) {
 		uint32_t bb_index;
 		infile.read(reinterpret_cast<char*>(&bb_index), sizeof(uint32_t));
 		std::optional<uint32_t> st = bb_index;
-		return new Send(dst, obj, msg, st);
+		send = new Send(dst, obj, msg, st);
+		send->biggest_reg = biggest_reg_so_far;
 	} else {
 		terminating_error(StampError::FileParsingError, "Unrecognized stamp type: " + std::to_string(stamp_type) + ".");
 		return nullptr;
 	}
+	return send;
 }
 
 Store *Store::from_file(std::ifstream &infile) {
@@ -352,7 +362,9 @@ Store *Store::from_file(std::ifstream &infile) {
 	uint8_t is_mutable;
 	infile.read(reinterpret_cast<char*>(&is_mutable), sizeof(uint8_t));
 
-	return new Store(dst, store_name, store, is_mutable);
+	auto st = new Store(dst, store_name, store, is_mutable);
+	st->biggest_reg = dst > store ? dst : store;
+	return st;
 }
 
 Jump *Jump::from_file(std::ifstream &infile) {
@@ -368,7 +380,9 @@ JumpTrue *JumpTrue::from_file(std::ifstream &infile) {
 	uint32_t condition;
 	infile.read(reinterpret_cast<char*>(&condition), sizeof(uint32_t));
 
-	return new JumpTrue(block_index, Register(condition));
+	auto jump = new JumpTrue(block_index, Register(condition));
+	jump->biggest_reg = condition;
+	return jump;
 }
 
 JumpFalse *JumpFalse::from_file(std::ifstream &infile) {
@@ -377,7 +391,9 @@ JumpFalse *JumpFalse::from_file(std::ifstream &infile) {
 	uint32_t condition;
 	infile.read(reinterpret_cast<char*>(&condition), sizeof(uint32_t));
 
-	return new JumpFalse(block_index, Register(condition));
+	auto jump = new JumpFalse(block_index, Register(condition));
+	jump->biggest_reg = condition;
+	return jump;
 }
 
 JumpSaved *JumpSaved::from_file(std::ifstream &) {
