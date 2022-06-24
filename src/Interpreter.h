@@ -59,7 +59,10 @@ public:
 	}
 
 	void put_object(std::string name, Object *object) {
-		scopes.contexts[scopes.contexts.size() - 1]->add(name, object);
+		if (in_global_scope)
+			global_scope.contexts[0]->add(name, object);
+		else
+			scopes.contexts[scopes.contexts.size() - 1]->add(name, object);
 	}
 
 	void put_object_at_scope(std::string name, Object *object, uint32_t bb_index) {
@@ -68,7 +71,10 @@ public:
 				scopes.contexts[i]->add(name, object);
 			}
 		}
-		scopes.contexts[scopes.contexts.size() - 1]->add(name, object);
+		if (in_global_scope)
+			global_scope.contexts[0]->add(name, object);
+		else
+			scopes.contexts[scopes.contexts.size() - 1]->add(name, object);
 	}
 
 	Object *fetch_object(std::string &name);
@@ -86,6 +92,10 @@ private:
 			contexts.push_back(context);
 		}
 
+		void add_lscope(LexicalScope *lscope) {
+			lexical_scopes.push_back(lscope);
+		}
+
 		void pop_scope() {
 			lexical_scopes.pop_back();
 			contexts.pop_back();
@@ -101,5 +111,7 @@ private:
 	Generator &generator;
 	std::vector<std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*>> reg_values;
 	Scopes scopes;
+	Scopes global_scope;
+	bool in_global_scope = { false };
 	std::vector<uint32_t> saved_bbs;
 };

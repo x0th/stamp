@@ -31,7 +31,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 
 	switch (token.type) {
 		case Token::Program: {
-			auto scope = generator.add_scope_beginning(0);
+			auto scope = generator.add_scope_beginning(0, true);
 			token.type = Token::SList;
 			generate_bytecode(generator);
 			generator.end_scope(scope);
@@ -41,7 +41,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			for (long unsigned int i = 0; i < children.size(); i++) {
 				auto c = children[i];
 				if (c->token.type == Token::SList) {
-					auto scope = generator.add_scope_beginning_current_bb(0);
+					auto scope = generator.add_scope_beginning_current_bb(0, true);
 					c->generate_bytecode(generator);
 					generator.end_scope(scope);
 
@@ -68,7 +68,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 				last_register = temp_register;
 			}
 			auto skip_function = generator.append<Jump>(0);
-			auto scope = generator.add_scope_beginning(SCOPE_CAN_RETURN);
+			auto scope = generator.add_scope_beginning(SCOPE_CAN_RETURN, false);
 			std::optional<uint32_t> stamp = generator.get_num_bbs() - 1;
 			children[children.size() - 1]->generate_bytecode(generator);
 			generator.append<JumpSaved>();
@@ -108,7 +108,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			auto condition_bb = generator.add_basic_block();
 			auto condition = children[0]->generate_bytecode(generator);
 			auto ji = generator.append<JumpFalse>(*condition);
-			auto body_scope = generator.add_scope_beginning(WHILE_SCOPE_FLAGS);
+			auto body_scope = generator.add_scope_beginning(WHILE_SCOPE_FLAGS, false);
 			body_scope->set_continue_dest(condition_bb->get_index());
 			auto body = children[1]->generate_bytecode(generator);
 			generator.append<Jump>(condition_bb->get_index());

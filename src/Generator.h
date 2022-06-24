@@ -22,7 +22,7 @@ class BasicBlock;
 
 class LexicalScope {
 public:
-	LexicalScope(int32_t scope_beginning, uint8_t flags) : scope_beginning(scope_beginning), scope_end(-1) {
+	LexicalScope(int32_t scope_beginning, uint8_t flags, bool is_global) : is_global(is_global), scope_beginning(scope_beginning), scope_end(-1) {
 		can_continue = flags & 0b1;
 		can_break = (flags & 0b10) >> 1;
 		can_return = (flags & 0b100) >> 2;
@@ -66,7 +66,9 @@ public:
 			flags = flags | 0b10;
 		if (can_return)
 			flags = flags | 0b100;
+		uint8_t is_glbl = is_global ? 1 : 0;
 		outfile.write(reinterpret_cast<char*>(&indicator), sizeof(uint8_t));
+		outfile.write(reinterpret_cast<char*>(&is_glbl), sizeof(uint8_t));
 		outfile.write(reinterpret_cast<char*>(&scope_beginning), sizeof(int32_t));
 		outfile.write(reinterpret_cast<char*>(&flags), sizeof(uint8_t));
 		if (can_continue)
@@ -77,12 +79,14 @@ public:
 	}
 
 	static LexicalScope *from_file(std::ifstream &infile) {
+		uint8_t is_global;
+		infile.read(reinterpret_cast<char*>(&is_global), sizeof(uint8_t));
 		int32_t scope_beginning;
 		infile.read(reinterpret_cast<char*>(&scope_beginning), sizeof(int32_t));
 		uint8_t flags;
 		infile.read(reinterpret_cast<char*>(&flags), sizeof(uint8_t));
 
-		auto ls = new LexicalScope(scope_beginning, flags);
+		auto ls = new LexicalScope(scope_beginning, flags, is_global);
 
 		if (ls->can_continue) {
 			uint32_t dest;
@@ -105,6 +109,8 @@ public:
 	bool can_continue = { false };
 	bool can_break = { false };
 	bool can_return = { false };
+
+	bool is_global = { false };
 private:
 	int32_t scope_beginning, scope_end;
 	uint32_t continue_dest = { 0 };
@@ -122,8 +128,8 @@ public:
 
 	BasicBlock *add_basic_block();
 
-	LexicalScope *add_scope_beginning(uint32_t flags);
-	LexicalScope *add_scope_beginning_current_bb(uint32_t flags);
+	LexicalScope *add_scope_beginning(uint32_t flags, bool can_be_global);
+	LexicalScope *add_scope_beginning_current_bb(uint32_t flags, bool can_be_global);
 	uint32_t get_num_bbs() const { return num_basic_blocks; }
 	std::vector<BasicBlock*> &get_bbs() { return basic_blocks; }
 	void end_scope(LexicalScope *scope);

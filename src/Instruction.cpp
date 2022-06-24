@@ -70,13 +70,13 @@ void Jump::execute(Interpreter &interpreter) {
 
 void JumpTrue::execute(Interpreter &interpreter) {
 	auto object = std::get_if<Object*>(&interpreter.at(condition.get_index()));
-	if (*object == interpreter.fetch_global_object("true"))
+	if (*object == interpreter.fetch_global_object("True"))
 		interpreter.jump_bb(block_index);
 }
 
 void JumpFalse::execute(Interpreter &interpreter) {
 	auto object = std::get_if<Object*>(&interpreter.at(condition.get_index()));
-	if (*object == interpreter.fetch_global_object("false"))
+	if (*object == interpreter.fetch_global_object("False"))
 		interpreter.jump_bb(block_index);
 }
 

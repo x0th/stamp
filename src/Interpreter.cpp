@@ -17,10 +17,17 @@ void Interpreter::run() {
 		// add all lexical scopes that start with the current basic block index to the context
 		LexicalScope *lscope = generator.get_scope(lexical_scope_index);
 		while (lscope && lscope->starts_at(current_bb)) {
-			if (current_bb == 0)
-				scopes.add_scope(lscope, Context::make_global_context());
-			else
+			if (current_bb == 0) {
+				global_scope.add_scope(lscope, Context::make_global_context());
+				in_global_scope = true;
+			} else if (lscope->is_global) {
+				global_scope.add_lscope(lscope);
+				in_global_scope = true;
+			}
+			else {
 				scopes.add_scope(lscope, new Context());
+				in_global_scope = false;
+			}
 			lscope = generator.get_scope(++lexical_scope_index);
 		}
 
@@ -53,12 +60,18 @@ Object *Interpreter::fetch_object(std::string &name) {
 		if (obj)
 			return obj;
 	}
+	auto global_obj = fetch_global_object(name);
+	if (global_obj)
+		return global_obj;
 	terminating_error(StampError::ExecutionError, "Object not in scope: " + name + ".");
 	return nullptr;
 }
 
 Object *Interpreter::fetch_global_object(std::string name) {
-	return scopes.contexts[0]->get(name);
+	auto obj = global_scope.contexts[0]->get(name);
+	if (!obj)
+		terminating_error(StampError::ExecutionError, "Object not in scope: " + name + ".");
+	return obj;
 }
 
 void Interpreter::dump() {

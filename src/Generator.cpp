@@ -19,13 +19,16 @@ BasicBlock *Generator::add_basic_block() {
 	return basic_blocks[num_basic_blocks++];
 }
 
-LexicalScope *Generator::add_scope_beginning(uint32_t flags) {
-	scopes.push_back(new LexicalScope(add_basic_block()->get_index(), flags));
+LexicalScope *Generator::add_scope_beginning(uint32_t flags, bool can_be_global) {
+	if (can_be_global && (scopes.empty() || scopes[num_scopes - 1]->is_global))
+		scopes.push_back(new LexicalScope(add_basic_block()->get_index(), flags, can_be_global));
+	else
+		scopes.push_back(new LexicalScope(add_basic_block()->get_index(), flags, false));
 	return scopes[num_scopes++];
 }
 
-LexicalScope *Generator::add_scope_beginning_current_bb(uint32_t flags) {
-	scopes.push_back(new LexicalScope(basic_blocks[num_basic_blocks - 1]->get_index(), flags));
+LexicalScope *Generator::add_scope_beginning_current_bb(uint32_t flags, bool can_be_global) {
+	scopes.push_back(new LexicalScope(basic_blocks[num_basic_blocks - 1]->get_index(), flags, can_be_global));
 	return scopes[num_scopes++];
 }
 
