@@ -8,5 +8,5 @@
 
 #include "AST.h"
 
-ASTNode *parse(std::string&, std::vector<std::string>&);
+ASTNode *parse(std::string&, std::vector<std::string>&, Generator *gen);
 std::string error_msg(std::string error);

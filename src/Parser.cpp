@@ -14,6 +14,7 @@ long unsigned int line_number;
 std::string raw_str;
 long unsigned int position;
 Token tok = Token(Token::Program, "", 0, 0);
+Generator *generator;
 
 ASTNode *parse_program();
 void parse_statement_list(ASTNode *s);
@@ -32,6 +33,7 @@ ASTNode *parse_if_tail();
 ASTNode *parse_else_tail();
 ASTNode *parse_while();
 ASTNode *parse_vec(ASTNode *list);
+ASTNode *parse_use();
 
 // FIXME: change all errors to be hinting errors when we implement error recovery
 
@@ -134,6 +136,10 @@ void parse_statement_list(ASTNode *s) {
 			parse_statement_list(s);
 			return;
 		}
+		case Token::Use:
+			s->get_children().push_back(parse_use());
+			parse_statement_list(s);
+			break;
 		case Token::Eof:
 			if (request_line())
 				parse_statement_list(s);
@@ -649,10 +655,44 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 	};
 }
 
-ASTNode *parse(std::string &fname, std::vector<std::string> &f) {
+ASTNode *parse_use() {
+	switch (tok.type) {
+		case Token::Use: {
+			next_token();
+			while (tok.type == Token::Eof) {
+				if (!request_line())
+					throw "Unexpected end of file.";
+			}
+			if (tok.type != Token::Value)
+				throw error_msg("Unexpected token when parsing use statement: " + tok.token_readable() + ".");
+
+			auto saved_file = file;
+			auto saved_filename = filename;
+			auto saved_line_number = line_number;
+			auto saved_raw_str = raw_str;
+			auto saved_position = position;
+
+			auto ast = generator->include_from(tok.value);
+
+			file = saved_file;
+			filename = saved_filename;
+			line_number = saved_line_number;
+			raw_str = saved_raw_str;
+			position = saved_position;
+
+			match(Token::StatementEnd);
+			return ast;
+		}
+		default:
+			throw error_msg("Unexpected token when parsing use statement: " + tok.token_readable() + ".");
+	}
+}
+
+ASTNode *parse(std::string &fname, std::vector<std::string> &f, Generator *gen) {
 	file = f;
 	filename = fname;
 	line_number = 0;
+	generator = gen;
 
 	if (f.size() != 0)
 		raw_str = f[0];

@@ -19,6 +19,7 @@
 
 class Instruction;
 class BasicBlock;
+class ASTNode;
 
 class LexicalScope {
 public:
@@ -121,7 +122,7 @@ private:
 
 class Generator {
 public:
-	Generator() {}
+	Generator(std::vector<std::string> &dirs) : dirs(dirs) {}
 	~Generator() = default;
 
 	Register next_register();
@@ -150,6 +151,8 @@ public:
 
 	void write_to_file(std::string &filename);
 	void read_from_file(std::string &filename);
+
+	ASTNode *include_from(std::string &filename);
 private:
 	uint32_t register_number = { 0 };
 	uint32_t num_basic_blocks = { 0 };
@@ -157,4 +160,6 @@ private:
 
 	std::vector<BasicBlock*> basic_blocks;
 	std::vector<LexicalScope*> scopes;
+
+	std::vector<std::string> dirs;
 };

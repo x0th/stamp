@@ -40,7 +40,8 @@
 	T(Break) \
 	T(Continue) \
 	T(Mut) \
-	T(Vec)
+	T(Vec) \
+	T(Use)
 
 class Token
 {

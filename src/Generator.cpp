@@ -5,10 +5,13 @@
  */
 
 #include <iostream>
+#include <stdio.h>
 
 #include "Generator.h"
 #include "Register.h"
 #include "Error.h"
+#include "AST.h"
+#include "Parser.h"
 
 Register Generator::next_register() {
 	return Register(register_number++);
@@ -91,4 +94,36 @@ void Generator::read_from_file(std::string &filename) {
 	}
 
 	infile.close();
+}
+
+ASTNode *Generator::include_from(std::string &filename) {
+	std::string resolved_filename;
+	if (filename.find(".stamp") != std::string::npos)
+		resolved_filename = filename;
+	else
+		resolved_filename = filename + ".stamp";
+	for (auto const &dir : dirs) {
+		// FIXME: only works on unix systems
+		auto temp = dir + "/" + resolved_filename;
+		std::ifstream test(temp);
+		if (test.good()) {
+			resolved_filename = temp;
+			break;
+		}
+	}
+
+	std::ifstream source_file(resolved_filename);
+
+	if (!source_file.is_open()) {
+		std::cerr << "Cannot find file to use: " << filename << ".\n";
+		exit(1);
+	}
+
+	std::vector<std::string> program;
+	std::string line;
+	while (getline(source_file, line)) {
+		program.push_back(line);
+	}
+
+	return parse(filename, program, this);
 }

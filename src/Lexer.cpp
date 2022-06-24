@@ -221,6 +221,7 @@ Token scan(std::string &raw_string, long unsigned int *position, std::string &fi
 				if (token_image == std::string("break")) return Token(Token::Break, file, line, column);
 				if (token_image == std::string("continue")) return Token(Token::Continue, file, line, column);
 				if (token_image == std::string("mut")) return Token(Token::Mut, file, line, column);
+				if (token_image == std::string("use")) return Token(Token::Use, file, line, column);
 				if (token_image[0] >= 65 && token_image[0] <= 90) return Token(Token::Object, token_image, file, line, column);
 				return Token(is_message ? Token::Message : Token::Value, token_image, file, line, column);
 			}

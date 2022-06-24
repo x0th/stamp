@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <iostream>
 #include <optional>
+#include <vector>
+#include <string>
 
 #include "Parser.h"
 #include "Generator.h"
@@ -18,6 +20,7 @@ bool dump_all_registers = false;
 bool generate_bytecode_file = false;
 std::optional<std::string> bytecode_file = std::nullopt;
 bool interpret_from_bytecode_file = false;
+std::vector<std::string> dirs{"."};
 
 void interpret_cmdline() {
 	while (1) {
@@ -28,14 +31,15 @@ void interpret_cmdline() {
 		program.push_back(line);
 		std::string filename;
 
-		auto ast = parse(filename, program);
+		Generator generator(dirs);
+
+		auto ast = parse(filename, program, &generator);
 		if (!ast)
 			continue;
 
 		if (dump_ast)
 			std::cout << ast->to_string() << "\n";
 
-		Generator generator;
 		ast->generate_bytecode(generator);
 
 		if (dump_bytecode)  {
@@ -54,24 +58,11 @@ void interpret_cmdline() {
 }
 
 void interpret_file(std::string &filename) {
-	std::ifstream source_file(filename);
-	
-	if (!source_file.is_open()) {
-		std::cout << "Unable to open file: " << filename << ".\n";
-		exit(1);
-	}
-
-	Generator generator;
+	Generator generator(dirs);
 	if (interpret_from_bytecode_file)
 		generator.read_from_file(filename);
 	else {
-		std::vector<std::string> program;
-		std::string line;
-		while (getline(source_file, line)) {
-			program.push_back(line);
-		}
-
-		auto ast = parse(filename, program);
+		auto ast = generator.include_from(filename);
 		if (!ast)
 			return;
 
@@ -126,7 +117,7 @@ int main(int argc, char *argv[]) {
 				case 'o': {
 					if (i + 1 == argc) {
 						std::cout << "No file given for -o option.\n";
-						exit(-1);
+						exit(1);
 					}
 					generate_bytecode_file = true;
 					if (argv[i + 1][0] != '-') {
@@ -137,8 +128,8 @@ int main(int argc, char *argv[]) {
 				}
 				case 'f': {
 					if (i + 1 == argc || argv[i + 1][0] == '-') {
-						std::cout << "No file given for -f option.\n";
-						exit(-1);
+						std::cerr << "No file given for -f option.\n";
+						exit(1);
 					}
 					interpret_from_bytecode_file = true;
 					if (argv[i + 1][0] != '-') {
@@ -146,8 +137,25 @@ int main(int argc, char *argv[]) {
 						filename = argv[i];
 					}
 					break;
-				} default:
-					std::cout << "Unrecognized option: " << argv[i][1] << "\n";
+				}
+				case 'd': {
+					if (i + 1 == argc || argv[i + 1][0] == '-') {
+						std::cerr << "No source file directories given for -d option.\n";
+						exit(1);
+					}
+					i += 1;
+					std::string dirlist = argv[i];
+					auto start = 0;
+					auto end = dirlist.find(",");
+					do {
+						dirs.push_back(dirlist.substr(start, end - start));
+						start = end + 1;
+						end = dirlist.find(",", start);
+					} while (end != std::string::npos);
+					break;
+				}
+				default:
+					std::cerr << "Unrecognized option: " << argv[i][1] << "\n";
 			}
 		} else {
 			filename = argv[i];
