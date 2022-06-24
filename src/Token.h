@@ -9,51 +9,61 @@
 #include <string>
 
 #define ENUMERATE_TOKENS(T) \
-	T(TokObject) \
-	T(TokMessage) \
-	T(TokSend) \
-	T(TokStore) \
-	T(TokValue) \
-	T(TokEOF) \
-	T(TokStatementEnd) \
-	T(TokSList) \
-	T(TokSListBegin) \
-	T(TokSListEnd) \
-	T(TokOpenParend) \
-	T(TokCloseParend) \
-	T(TokComa) \
-	T(TokFn) \
-	T(TokIf) \
-	T(TokElse) \
-	T(TokInt) \
-	T(TokChar) \
-	T(TokString) \
-	T(TokSqBracketL) \
-	T(TokSqBracketR) \
-	T(TokList) \
-	T(TokWhile) \
-	T(TokProgram) \
-	T(TokFnCall) \
-	T(TokSlashSlash) \
-	T(TokSlashStar) \
-	T(TokStarSlash) \
-	T(TokBreak) \
-	T(TokContinue) \
-	T(TokMut) \
-	T(TokVec)
+	T(Object) \
+	T(Message) \
+	T(Send) \
+	T(Store) \
+	T(Value) \
+	T(Eof) \
+	T(StatementEnd) \
+	T(SList) \
+	T(SListBegin) \
+	T(SListEnd) \
+	T(OpenParend) \
+	T(CloseParend) \
+	T(Coma) \
+	T(Fn) \
+	T(If) \
+	T(Else) \
+	T(Int) \
+	T(Char) \
+	T(String) \
+	T(SqBracketL) \
+	T(SqBracketR) \
+	T(List) \
+	T(While) \
+	T(Program) \
+	T(FnCall) \
+	T(SlashSlash) \
+	T(SlashStar) \
+	T(StarSlash) \
+	T(Break) \
+	T(Continue) \
+	T(Mut) \
+	T(Vec)
 
-enum TokenType {
+class Token
+{
+public:
+	enum TokenType {
 #define __DEFINE_TOKEN_TYPES(t) \
 	t,
-			ENUMERATE_TOKENS(__DEFINE_TOKEN_TYPES)
+		ENUMERATE_TOKENS(__DEFINE_TOKEN_TYPES)
 #undef __DEFINE_TOKEN_TYPES
-};
+	};
 
-struct Token
-{
+	Token(TokenType type, std::string value, std::string file, size_t line, size_t column)
+		: type(type), value(value), file(file), line(line), column(column) {}
+	Token(TokenType type, std::string file, size_t line, size_t column)
+		: type(type), file(file), line(line), column(column) {}
+
+	std::string token_str() const;
+	std::string token_readable() const;
+	std::string position() const;
+
 	TokenType type;
 	std::string value;
+	std::string file;
+	size_t line;
+	size_t column;
 };
-
-std::string token_str(Token *token);
-std::string token_readable(Token *token);

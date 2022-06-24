@@ -18,9 +18,9 @@
 class Context;
 
 #define ENUMERATE_BASIC_OBJECTS(O)\
-	O(TokInt, "Int")                \
-	O(TokChar, "Char")              \
-	O(TokString, "String")
+	O(Token::Int, "Int")                \
+	O(Token::Char, "Char")              \
+	O(Token::String, "String")
 
 class ASTNode {
 public:

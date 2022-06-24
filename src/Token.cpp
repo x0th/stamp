@@ -9,50 +9,54 @@
 #include "Token.h"
 
 
-std::string token_str(Token *token) {
+std::string Token::token_str() const {
 	std::string s = "";
-	switch (token->type) {
+	switch (type) {
 #define __TOK_STR(type) case type: s += #type; break;
 		ENUMERATE_TOKENS(__TOK_STR)
 #undef __TOK_STR
 	}
-	return s + "(" + token->value + ")";
+	return s + "(" + value + ")";
 }
 
-std::string token_readable(Token *token) {
-	switch (token->type) {
-		case TokObject:
-		case TokMessage:
-		case TokInt:
-		case TokChar:
-		case TokString:
-		case TokList:
-		case TokValue: return token->value;
-		case TokSend: return "Send";
-		case TokStore: return "=";
-		case TokEOF: return "EOF";
-		case TokStatementEnd: return ";";
-		case TokSList: return "Statement List";
-		case TokSListBegin: return "{";
-		case TokSListEnd: return "}";
-		case TokOpenParend: return "(";
-		case TokCloseParend: return ")";
-		case TokComa: return ",";
-		case TokFn: return "fn";
-		case TokIf: return "if";
-		case TokElse: return "else";
-		case TokSqBracketL: return "[";
-		case TokSqBracketR: return "]";
-		case TokWhile: return "while";
-		case TokProgram: return "Program";
-		case TokFnCall: return "Function call";
-		case TokSlashSlash: return "Comment";
-		case TokSlashStar: return "Multiline comment begin";
-		case TokStarSlash: return "Multiline comment end";
-		case TokBreak: return "break";
-		case TokContinue: return "continue";
-		case TokMut: return "mut";
-		case TokVec: return "Vec";
+std::string Token::token_readable() const {
+	switch (type) {
+		case Object:
+		case Message:
+		case Int:
+		case Char:
+		case String:
+		case List:
+		case Value: return value;
+		case Send: return "Send";
+		case Store: return "=";
+		case Eof: return "EOF";
+		case StatementEnd: return ";";
+		case SList: return "Statement List";
+		case SListBegin: return "{";
+		case SListEnd: return "}";
+		case OpenParend: return "(";
+		case CloseParend: return ")";
+		case Coma: return ",";
+		case Fn: return "fn";
+		case If: return "if";
+		case Else: return "else";
+		case SqBracketL: return "[";
+		case SqBracketR: return "]";
+		case While: return "while";
+		case Program: return "Program";
+		case FnCall: return "Function call";
+		case SlashSlash: return "Comment";
+		case SlashStar: return "Multiline comment begin";
+		case StarSlash: return "Multiline comment end";
+		case Break: return "break";
+		case Continue: return "continue";
+		case Mut: return "mut";
+		case Vec: return "Vec";
 	}
 	return "";
+}
+
+std::string Token::position() const {
+	return file + ":" + std::to_string(line) + ":" + std::to_string(column);
 }

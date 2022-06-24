@@ -29,17 +29,17 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 		}
 
 	switch (token.type) {
-		case TokProgram: {
+		case Token::Program: {
 			auto scope = generator.add_scope_beginning(0);
-			token.type = TokSList;
+			token.type = Token::SList;
 			generate_bytecode(generator);
 			generator.end_scope(scope);
 			break;
 		}
-		case TokSList: {
+		case Token::SList: {
 			for (long unsigned int i = 0; i < children.size(); i++) {
 				auto c = children[i];
-				if (c->token.type == TokSList) {
+				if (c->token.type == Token::SList) {
 					auto scope = generator.add_scope_beginning_current_bb(0);
 					c->generate_bytecode(generator);
 					generator.end_scope(scope);
@@ -53,7 +53,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			}
 			break;
 		}
-		case TokFn: {
+		case Token::Fn: {
 			auto callable_obj = generator.next_register();
 			generator.append<Load>(callable_obj, "Callable");
 			auto callable_name = generator.next_register();
@@ -77,7 +77,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			generator.append<Send>(final, last_register, "pass_body", stamp);
 			return final;
 		}
-		case TokFnCall: {
+		case Token::FnCall: {
 			auto last_register = *children[0]->generate_bytecode(generator);
 			for (long unsigned int i = 1; i < children.size(); i++) {
 				std::optional<std::string> stamp = children[i]->token.value;
@@ -91,7 +91,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			generator.add_basic_block();
 			return final;
 		};
-		case TokIf: {
+		case Token::If: {
 			auto condition = children[0]->generate_bytecode(generator);
 			auto ji = generator.append<JumpFalse>(*condition);
 			auto true_condition = children[1]->generate_bytecode(generator);
@@ -103,7 +103,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			}
 			return true_condition;
 		}
-		case TokWhile: {
+		case Token::While: {
 			auto condition_bb = generator.add_basic_block();
 			auto condition = children[0]->generate_bytecode(generator);
 			auto ji = generator.append<JumpFalse>(*condition);
@@ -117,7 +117,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			ji->set_jump(after_while);
 			return body;
 		}
-		case TokBreak: {
+		case Token::Break: {
 			for (int i = generator.get_num_scopes() - 1; i >= 0; i--) {
 				auto lscope = generator.get_scope(i);
 				if (lscope->can_break) {
@@ -128,7 +128,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			// FIXME: error!
 			break;
 		}
-		case TokContinue: {
+		case Token::Continue: {
 			for (int i = generator.get_num_scopes() - 1; i >= 0; i--) {
 				auto lscope = generator.get_scope(i);
 				if (lscope->can_continue) {
@@ -138,7 +138,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			// FIXME: error!
 			break;
 		}
-		case TokVec: {
+		case Token::Vec: {
 			auto vec = generator.next_register();
 			generator.append<Load>(vec, "Vec");
 
@@ -155,7 +155,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 
 			return dst;
 		}
-		case TokStore: {
+		case Token::Store: {
 			auto obj = children[0]->generate_bytecode(generator);
 			if (!obj.has_value()) {
 				// FIXME: Error!
@@ -164,17 +164,17 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 			if (!rhs.has_value()) {
 				// FIXME: Error!
 			}
-			bool is_mutable = children.size() == 4 && children[3]->token.type == TokMut;
+			bool is_mutable = children.size() == 4 && children[3]->token.type == Token::Mut;
 			generator.append<Store>(*obj, children[1]->token.value, *rhs, is_mutable);
 			return {};
 		}
-		case TokSend: {
+		case Token::Send: {
 			auto obj = children[0]->generate_bytecode(generator);
 			if (!obj.has_value()) {
 				// FIXME: Error!
 			}
 			if (children[1]->children.size() != 0) {
-				if (children[1]->get_children()[0]->token.type == TokObject || children[1]->get_children()[0]->token.type == TokValue) {
+				if (children[1]->get_children()[0]->token.type == Token::Object || children[1]->get_children()[0]->token.type == Token::Value) {
 					std::optional<std::string> stamp = children[1]->get_children()[0]->token.value;
 					auto dst = generator.next_register();
 					generator.append<Send>(dst, *obj, children[1]->token.value, stamp);
@@ -192,7 +192,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 				return dst;
 			}
 		}
-		case TokObject: {
+		case Token::Object: {
 			auto dst = generator.next_register();
 			generator.append<Load>(dst, token.value);
 			return dst;
@@ -209,7 +209,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 
 std::string ASTNode::to_string_indent(std::string indent) {
 	std::stringstream s;
-	s << indent << token_str(&token) << "\n";
+	s << indent << token.token_str() << " " << token.position() << "\n";
 	for (auto &c : children) {
 		s << c->to_string_indent(indent + "  ");
 	}

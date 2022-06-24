@@ -16,7 +16,7 @@ string filename;
 long unsigned int line_number;
 string raw_str;
 long unsigned int position;
-Token tok;
+Token tok = Token(Token::Program, "", 0, 0);
 
 ASTNode *parse_program();
 void parse_statement_list(ASTNode *s);
@@ -35,13 +35,6 @@ ASTNode *parse_if_tail();
 ASTNode *parse_else_tail();
 ASTNode *parse_while();
 ASTNode *parse_vec(ASTNode *list);
-
-#define clone_obj(obj_name)                                                                                     \
-	vector<ASTNode *> children;                                                                                 \
-	children.push_back(new ASTNode(Token { type: TokObject, value: obj_name }));                                \
-	children.push_back(new ASTNode(Token { type: TokMessage, value: "clone" }));                                \
-	children[1]->get_children().push_back(object);                                                              \
-	auto cloned = new ASTNode(Token { type: TokSend, value: "" }, children);                                    \
 
 string error_msg(string error) {
 	string out;
@@ -62,16 +55,16 @@ bool request_line();
 
 inline void next_token() {
 	if (raw_str.size() > position) {
-		tok = scan(raw_str, &position);
-		if (tok.type == TokSlashSlash) {
+		tok = scan(raw_str, &position, filename, line_number);
+		if (tok.type == Token::SlashSlash) {
 			if (!request_line())
-				tok = Token({ type: TokEOF, value: "" });
+				tok = Token(Token::Eof, filename, line_number, position);
 			else
 				next_token();
-		} if (tok.type == TokSlashStar) {
-			while (tok.type != TokStarSlash) {
-				tok = scan(raw_str, &position);
-				if (tok.type == TokEOF) {
+		} if (tok.type == Token::SlashStar) {
+			while (tok.type != Token::StarSlash) {
+				tok = scan(raw_str, &position, filename, line_number);
+				if (tok.type == Token::Eof) {
 					if (!request_line())
 						throw error_msg("Unmatched multiline comment start.");
 				}
@@ -79,14 +72,14 @@ inline void next_token() {
 			next_token();
 		}
 	} else
-		tok = Token({ type: TokEOF, value: "" });
+		tok = Token(Token::Eof, filename, line_number, position);
 }
 
-inline void match(TokenType expected) {
+inline void match(Token::TokenType expected) {
 	next_token();
 	if (tok.type != expected) {
-		Token t = Token({ type: expected, value: "" });
-		throw error_msg(error_msg("Expected " + token_readable(&t) + ". Found: " + token_readable(&tok)));
+		Token t = Token(expected, filename, line_number, position);
+		throw error_msg(error_msg("Expected " + t.token_readable() + ". Found: " + tok.token_readable()));
 	}
 }
 
@@ -102,13 +95,12 @@ bool request_line() {
 }
 
 ASTNode *parse_program() {
-	ASTNode *s = new ASTNode(Token { type: TokProgram, value: "" });
+	ASTNode *s = new ASTNode(Token(Token::Program, filename, line_number, position));
 	try {
 		next_token();
 		parse_statement_list(s);
 	} catch (string &msg) {
-		cerr << msg;
-		return nullptr;
+		terminating_error(StampError::ParsingError, msg);
 	}
 
 	return s;
@@ -117,24 +109,24 @@ ASTNode *parse_program() {
 void parse_statement_list(ASTNode *s) {
 	ASTNode *st;
 	switch (tok.type) {
-		case TokStatementEnd: {
+		case Token::StatementEnd: {
 			next_token();
 			parse_statement_list(s);
 			return;
 		}
-		case TokObject:
-		case TokValue:
-		case TokFn:
-		case TokIf:
-		case TokWhile:
-		case TokInt:
-		case TokChar:
-		case TokString:
-		case TokSqBracketL:
-		case TokMessage:
-		case TokBreak:
-		case TokContinue:
-		case TokMut:
+		case Token::Object:
+		case Token::Value:
+		case Token::Fn:
+		case Token::If:
+		case Token::While:
+		case Token::Int:
+		case Token::Char:
+		case Token::String:
+		case Token::SqBracketL:
+		case Token::Message:
+		case Token::Break:
+		case Token::Continue:
+		case Token::Mut:
 		{
 			st = parse_statement();
 			if (st) {
@@ -143,12 +135,12 @@ void parse_statement_list(ASTNode *s) {
 			parse_statement_list(s);
 			return;
 		}
-		case TokEOF:
+		case Token::Eof:
 			if (request_line())
 				parse_statement_list(s);
 			return;
-		case TokSListBegin: {
-			ASTNode *new_slist = new ASTNode(Token { type: TokSList, value: "" });
+		case Token::SListBegin: {
+			ASTNode *new_slist = new ASTNode(Token(Token::SList, filename, line_number, position));
 			next_token();
 			parse_statement_list(new_slist);
 			if (new_slist)
@@ -156,7 +148,7 @@ void parse_statement_list(ASTNode *s) {
 			parse_statement_list(s);
 			return;
 		}
-		case TokSListEnd:
+		case Token::SListEnd:
 			next_token();
 			return;
 		default:
@@ -181,65 +173,65 @@ bool is_operator(string &s) {
 
 ASTNode *parse_statement() {
 	switch (tok.type) {
-		case TokInt:
-		case TokChar:
-		case TokString:
-		case TokObject: {
+		case Token::Int:
+		case Token::Char:
+		case Token::String:
+		case Token::Object: {
 			auto object = new ASTNode(tok);
 			next_token(); // obj
 			return parse_statement_tail(object);
 		}
-		case TokValue: {
+		case Token::Value: {
 			if (is_operator(tok.value)) {
-				tok.type = TokMessage;
+				tok.type = Token::Message;
 				return parse_statement();
 			}
 
-			auto object = new ASTNode(Token { type: TokObject, value: tok.value });
+			auto object = new ASTNode(Token(Token::Object, tok.value, filename, line_number, position));
 			next_token(); // obj
 			return parse_statement_tail(object);
 		}
-		case TokSqBracketL: {
-			auto vec = new ASTNode(Token{ type: TokVec, value: "" });
+		case Token::SqBracketL: {
+			auto vec = new ASTNode(Token(Token::Vec, filename, line_number, position));
 			next_token(); // [
 			return parse_message_tail(parse_vec(vec));
 		}
-		case TokMut: {
+		case Token::Mut: {
 			auto mut_indicator = new ASTNode(tok);
 			next_token();
 			ASTNode *object;
-			if (tok.type == TokObject || tok.type == TokInt ||
-				tok.type == TokChar || tok.type == TokString) {
+			if (tok.type == Token::Object || tok.type == Token::Int ||
+				tok.type == Token::Char || tok.type == Token::String) {
 				object = new ASTNode(tok);
-			} else if (tok.type == TokValue) {
-				object = new ASTNode(Token { type: TokObject, value: tok.value });
+			} else if (tok.type == Token::Value) {
+				object = new ASTNode(Token(Token::Object, tok.value, filename, line_number, position));
 			} else {
-				throw("mut keyword is not applicable to " + token_readable(&tok));
+				throw("mut keyword is not applicable to " + tok.token_readable());
 			}
 
 			next_token(); // obj
 
-			if (tok.type == TokValue) {
+			if (tok.type == Token::Value) {
 				auto full_statement = parse_statement_tail(object);
 				full_statement->get_children().push_back(mut_indicator);
 				return full_statement;
 			} else
 				throw error_msg("mut keyword can only be used in a store statement.");
 		}
-		case TokFn: {
+		case Token::Fn: {
 			auto fn = new ASTNode(tok);
 			next_token(); // fn
 			fn->get_children().push_back(new ASTNode(tok));
 			next_token(); // function name
 			return parse_function_tail(fn);
 		}
-		case TokIf: {
+		case Token::If: {
 			return parse_if();
 		}
-		case TokWhile: {
+		case Token::While: {
 			return parse_while();
 		}
-		case TokMessage: {
+		case Token::Message: {
 			if (!is_operator(tok.value)) {
 				throw error_msg("Message at the start of statement was not an operator.");
 			}
@@ -249,10 +241,10 @@ ASTNode *parse_statement() {
 			next_token();
 			children.push_back(parse_statement());
 			children.push_back(new ASTNode(msg));
-			return new ASTNode(Token{ type: TokSend, value: "" }, children);
+			return new ASTNode(Token(Token::Send, filename, line_number, position), children);
 		}
-		case TokBreak:
-		case TokContinue: {
+		case Token::Break:
+		case Token::Continue: {
 			auto ast = new ASTNode(tok);
 			next_token();
 			return ast;
@@ -264,164 +256,164 @@ ASTNode *parse_statement() {
 
 ASTNode *parse_function_tail(ASTNode *function) {
 	switch(tok.type) {
-		case TokOpenParend: {
+		case Token::OpenParend: {
 			next_token(); // (
 			parse_function_signature(function);
 			next_token(); // )
 			next_token(); // {
-			auto body = new ASTNode(Token { type: TokSList, value: "" });
+			auto body = new ASTNode(Token(Token::SList,filename, line_number, position));
 			parse_statement_list(body);
 			function->get_children().push_back(body);
 			return function;
 		}
-		case TokEOF: {
+		case Token::Eof: {
 			if (request_line())
 				return parse_function_tail(function);
 			throw error_msg("Unexpected end of file.");
 		}
 		default:
-			throw error_msg("Expected (. Found " + token_readable(&tok) + ".");
+			throw error_msg("Expected (. Found " + tok.token_readable() + ".");
 	}
 }
 
 ASTNode *parse_statement_tail(ASTNode *object) {
 	switch (tok.type) {
-		case TokMessage:
-		case TokObject:
-		case TokOpenParend: {
+		case Token::Message:
+		case Token::Object:
+		case Token::OpenParend: {
 			return parse_message_tail(object);
 		}
-		case TokValue: {
+		case Token::Value: {
 			vector<ASTNode *>children;
 			children.push_back(object);
 			children.push_back(new ASTNode(tok));
-			match(TokStore); // =
+			match(Token::Store); // =
 			next_token();
 			children.push_back(parse_rhs(children[1]));
 
 			// traverse the TokSend chain to check if the first send was a clone
 			// if so, add the name to it
 			auto rhs = children[2];
-			while (rhs->token.type == TokSend && rhs->get_children()[0]->token.type == TokSend) {
+			while (rhs->token.type == Token::Send && rhs->get_children()[0]->token.type == Token::Send) {
 				rhs = rhs->get_children()[0];
 			}
-			if (rhs->token.type == TokSend && rhs->get_children().size() != 0 && rhs->get_children()[1]->token.value == "clone") {
-				rhs->get_children()[1]->get_children().push_back(new ASTNode(Token{ type: TokValue, value: children[1]->token.value }));
+			if (rhs->token.type == Token::Send && rhs->get_children().size() != 0 && rhs->get_children()[1]->token.value == "clone") {
+				rhs->get_children()[1]->get_children().push_back(new ASTNode(Token(Token::Value, children[1]->token.value, filename, line_number, position)));
 			}
 
-			return new ASTNode(Token { type: TokStore, value: "" }, children);
+			return new ASTNode(Token(Token::Store, filename, line_number, position), children);
 		}
-		case TokStore: {
+		case Token::Store: {
 			next_token();
 			auto rhs = parse_rhs(object);
 			rhs->get_children()[1]->get_children().push_back(object);
 			return rhs;
 		}
-		case TokSListEnd:
+		case Token::SListEnd:
 			return object;
-		case TokStatementEnd:
-		case TokEOF:
-		case TokComa:
-		case TokCloseParend:
+		case Token::StatementEnd:
+		case Token::Eof:
+		case Token::Coma:
+		case Token::CloseParend:
 			next_token();
 			return object;
 		default:
-			throw error_msg("Expected Object, value, message, =, (, ), ;, } or ,. Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected Object, value, message, =, (, ), ;, } or ,. Found: " + tok.token_readable() + ".");
 	};
 }
 
 ASTNode *parse_vec(ASTNode *vec) {
 	switch(tok.type) {
-		case TokSqBracketR: {
+		case Token::SqBracketR: {
 			next_token(); return vec;
 		}
-		case TokComa:
+		case Token::Coma:
 			next_token(); return parse_vec(vec);
-		case TokObject:
-		case TokValue:
-		case TokInt:
-		case TokChar:
-		case TokString:
-		case TokSqBracketL: {
+		case Token::Object:
+		case Token::Value:
+		case Token::Int:
+		case Token::Char:
+		case Token::String:
+		case Token::SqBracketL: {
 			vec->get_children().push_back(parse_statement_rhs());
 			return parse_vec(vec);
 		}
-		case TokEOF: {
+		case Token::Eof: {
 			if (request_line())
 				return parse_vec(vec);
 			throw error_msg("Unexpected end of file.");
 		}
 		default:
-			throw error_msg("Object, value, [ or ]. Found: " + token_readable(&tok) + ".");
+			throw error_msg("Object, value, [ or ]. Found: " + tok.token_readable() + ".");
 	}
 }
 
 ASTNode *parse_rhs(ASTNode *object) {
 	switch(tok.type) {
-		case TokFn: {
+		case Token::Fn: {
 			auto fn = new ASTNode(tok);
 			next_token();
 			fn->get_children().push_back(object);
 			return parse_function_tail(fn);
 		}
-		case TokInt:
-		case TokObject:
-		case TokValue:
-		case TokChar:
-		case TokString:
-		case TokSqBracketL:
+		case Token::Int:
+		case Token::Object:
+		case Token::Value:
+		case Token::Char:
+		case Token::String:
+		case Token::SqBracketL:
 			return parse_statement_rhs();
-		case TokEOF: {
+		case Token::Eof: {
 			if (request_line())
 				return parse_rhs(object);
 			throw error_msg("Unexpected end of file.");
 		}
 		default:
-			throw error_msg("Expected function declaration, Object or value. Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected function declaration, Object or value. Found: " + tok.token_readable() + ".");
 	}
 }
 
 ASTNode *parse_statement_rhs() {
 	switch (tok.type) {
-		case TokInt:
-		case TokChar:
-		case TokString:
-		case TokObject: {
+		case Token::Int:
+		case Token::Char:
+		case Token::String:
+		case Token::Object: {
 			auto object = new ASTNode(tok);
 			next_token(); // obj
 			return parse_message_tail(object);
 		}
-		case TokValue: {
-			auto object = new ASTNode(Token { type: TokObject, value: tok.value });
+		case Token::Value: {
+			auto object = new ASTNode(Token(Token::Object, tok.value, filename, line_number, position));
 			next_token(); // obj
 			return parse_message_tail(object);
 		}
-		case TokSqBracketL: {
-			auto vec = new ASTNode(Token { type: TokVec, value: "" });
+		case Token::SqBracketL: {
+			auto vec = new ASTNode(Token(Token::Vec, filename, line_number, position));
 			next_token(); // [
 			parse_vec(vec);
 			return parse_message_tail(vec);
 		}
-		case TokCloseParend:
+		case Token::CloseParend:
 			return nullptr;
 		default:
-			throw error_msg("Expected Object or value. Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected Object or value. Found: " + tok.token_readable() + ".");
 	}
 }
 
 ASTNode *parse_parameters(ASTNode *s) {
 	switch (tok.type) {
-		case TokCloseParend:
+		case Token::CloseParend:
 			return s;
-		case TokComa:
+		case Token::Coma:
 			next_token();
 			return parse_parameters(s);
-		case TokObject:
-		case TokValue:
-		case TokInt:
-		case TokChar:
-		case TokString:
-		case TokSqBracketL:
+		case Token::Object:
+		case Token::Value:
+		case Token::Int:
+		case Token::Char:
+		case Token::String:
+		case Token::SqBracketL:
 			s->get_children().push_back(parse_statement_rhs());
 			return parse_parameters(s);
 //		case TokSListBegin: {
@@ -437,27 +429,27 @@ ASTNode *parse_parameters(ASTNode *s) {
 //			return parse_parameters(further);
 //		}
 		default:
-			throw error_msg("Expected Object, value, ) or ,. Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected Object, value, ) or ,. Found: " + tok.token_readable() + ".");
 	}
 }
 
 ASTNode *parse_function_signature(ASTNode *function) {
 	switch (tok.type) {
-		case TokCloseParend:
+		case Token::CloseParend:
 			return function;
-		case TokValue:
+		case Token::Value:
 		{
 			function->get_children().push_back(new ASTNode(tok));
 			next_token();
 			return parse_param_type(function);
 		}
-		case TokEOF: {
+		case Token::Eof: {
 			if (request_line())
 				return parse_function_signature(function);
 			throw error_msg("Unexpected end of file.");
 		}
 		default:
-			throw error_msg("Expected value or ). Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected value or ). Found: " + tok.token_readable() + ".");
 	}	
 }
 
@@ -465,39 +457,39 @@ ASTNode *parse_param_type(ASTNode *param) {
 	switch (tok.type) {
 		//case TokColon:
 			// FIXME: param type
-		case TokComa:
-		case TokCloseParend:
+		case Token::Coma:
+		case Token::CloseParend:
 			return parse_next_param(param);
-		case TokEOF: {
+		case Token::Eof: {
 			if (request_line())
 				return parse_param_type(param);
 			throw error_msg("Unexpected end of file.");
 		}
 		default:
-			throw error_msg("Expected , or ). Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected , or ). Found: " + tok.token_readable() + ".");
 	}
 }
 
 ASTNode *parse_next_param(ASTNode *so_far) {
 	switch (tok.type) {
-		case TokComa:
+		case Token::Coma:
 			next_token();
 			return parse_function_signature(so_far);
-		case TokCloseParend:
+		case Token::CloseParend:
 			return so_far;
 		default:
-			throw error_msg("Expected , or ). Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected , or ). Found: " + tok.token_readable() + ".");
 	}
 }
 
 ASTNode *parse_if() {
 	switch (tok.type) {
-		case TokIf: {
+		case Token::If: {
 			auto if_ast = new ASTNode(tok);
 			next_token();
 			auto full_param = parse_statement_rhs();
 			next_token();
-			auto true_branch = new ASTNode(Token { type: TokSList, value: "" });
+			auto true_branch = new ASTNode(Token(Token::SList, filename, line_number, position));
 			parse_statement_list(true_branch);
 			auto false_branch = parse_if_tail();
 
@@ -509,61 +501,61 @@ ASTNode *parse_if() {
 			return if_ast;
 		}
 		default:
-			throw error_msg("Expected if. Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected if. Found: " + tok.token_readable() + ".");
 	}
 }
 
 ASTNode *parse_if_tail() {
 	switch (tok.type) {
-		case TokElse: {
+		case Token::Else: {
 			next_token();
 			return parse_else_tail();
 		}
-		case TokIf:
-		case TokObject:
-		case TokValue:
-		case TokInt:
-		case TokString:
-		case TokChar:
-		case TokWhile:
-		case TokSListEnd:
+		case Token::If:
+		case Token::Object:
+		case Token::Value:
+		case Token::Int:
+		case Token::String:
+		case Token::Char:
+		case Token::While:
+		case Token::SListEnd:
 			return nullptr;
-		case TokEOF:
+		case Token::Eof:
 			if (request_line())
 				return parse_if_tail();
 			return nullptr;
 		default:
-			throw error_msg("Expected if, else, Object or value. Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected if, else, Object or value. Found: " + tok.token_readable() + ".");
 	}
 }
 
 ASTNode *parse_else_tail() {
 	switch (tok.type) {
-		case TokIf:
+		case Token::If:
 			return parse_if();
-		case TokSListBegin: {
-			auto body = new ASTNode(Token{type: TokSList, value: ""});
+		case Token::SListBegin: {
+			auto body = new ASTNode(Token(Token::SList, filename, line_number, position));
 			next_token();
 			parse_statement_list(body);
 			return body;
 		}
-		case TokEOF:
+		case Token::Eof:
 			if (request_line())
 				return parse_else_tail();
 			throw "Unexpected end of file.";
 		default:
-			throw error_msg("Expected if or {. Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected if or {. Found: " + tok.token_readable() + ".");
 	}
 }
 
 ASTNode *parse_while() {
 	switch (tok.type) {
-		case TokWhile: {
+		case Token::While: {
 			auto while_ast = new ASTNode(tok);
 			next_token();
 			auto full_param = parse_statement_rhs();
 			next_token();
-			auto body = new ASTNode(Token { type: TokSList, value: "" });
+			auto body = new ASTNode(Token(Token::SList, filename, line_number, position));
 			parse_statement_list(body);
 
 			while_ast->get_children().push_back(full_param);
@@ -572,7 +564,7 @@ ASTNode *parse_while() {
 			return while_ast;
 		}
 		default:
-			throw error_msg("Expected while. Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected while. Found: " + tok.token_readable() + ".");
 	}
 }
 
@@ -599,28 +591,28 @@ inline bool swap_precedence(string &old_operator, string &new_operator) {
 
 ASTNode *parse_message_tail(ASTNode *previous_message) {
 	switch (tok.type) {
-		case TokInt:
-		case TokChar:
-		case TokString:
-		case TokObject:
-		case TokValue: {
+		case Token::Int:
+		case Token::Char:
+		case Token::String:
+		case Token::Object:
+		case Token::Value: {
 			previous_message->get_children()[1]->get_children().push_back(new ASTNode(tok));
 			next_token();
 			return parse_message_tail(previous_message);
 		}
-		case TokSqBracketL: {
-			auto vec = new ASTNode(Token { type: TokVec, value: "" });
+		case Token::SqBracketL: {
+			auto vec = new ASTNode(Token(Token::Vec, filename, line_number, position));
 			next_token(); // [
 			parse_vec(vec);
 			previous_message->get_children()[1]->get_children().push_back(vec);
 			return parse_message_tail(previous_message);
 		}
-		case TokMessage: {
+		case Token::Message: {
 			vector<ASTNode *> children;
 			children.push_back(previous_message);
 			children.push_back(new ASTNode(tok));
 			next_token();
-			auto next_message =  parse_message_tail(new ASTNode(Token { type: TokSend, value: "" }, children));
+			auto next_message =  parse_message_tail(new ASTNode(Token(Token::Send, filename, line_number, position), children));
 			// Change order of messages based on precedence
 //			if (previous_message->token.type && swap_precedence(previous_message->get_children()[1]->token.value, children[1]->token.value)) {
 //				auto prev = previous_message->get_children()[1];
@@ -631,30 +623,30 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 //			}
 			return next_message;
 		}
-		case TokOpenParend: {
+		case Token::OpenParend: {
 			next_token(); // (
-			auto fn_call = new ASTNode(Token { type: TokFnCall, value: "" });
+			auto fn_call = new ASTNode(Token(Token::FnCall, filename, line_number, position));
 			fn_call->get_children().push_back(previous_message);
 			parse_parameters(fn_call);
 			next_token(); // )
 			return fn_call;
 		}
-		case TokEOF: {
+		case Token::Eof: {
 			if (request_line())
 				return parse_message_tail(previous_message);
 			return previous_message;
 		}
-		case TokStatementEnd:
-		case TokComa:
-		case TokSListEnd:
-		case TokCloseParend:
-		case TokSqBracketR:
+		case Token::StatementEnd:
+		case Token::Coma:
+		case Token::SListEnd:
+		case Token::CloseParend:
+		case Token::SqBracketR:
 			return previous_message;
-		case TokSListBegin:
+		case Token::SListBegin:
 		//	previous_message->get_children()[1]->get_children().push_back(parse_program());
 			return previous_message;
 		default:
-			throw error_msg("Expected Object, value, message, (, ), ;, }, EOF or ,. Found: " + token_readable(&tok) + ".");
+			throw error_msg("Expected Object, value, message, (, ), ;, }, EOF or ,. Found: " + tok.token_readable() + ".");
 	};
 }
 
