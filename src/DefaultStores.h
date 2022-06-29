@@ -17,6 +17,16 @@
 #include "Interpreter.h"
 #include "Error.h"
 
+#define int_arithmetic(op) \
+	auto result = static_cast<StoreInt*>(object->get_store("value"))->unwrap() op static_cast<StoreInt*>(other->get_store("value"))->unwrap(); \
+	auto result_obj = std::get<Object*>(clone_object(object->get_prototype(), "::lit_" + std::to_string(result), interpreter)); \
+	result_obj->add_store<StoreInt>("value", result, true); \
+	return result_obj;
+
+#define int_compare(op) \
+	auto result = static_cast<StoreInt*>(object->get_store("value"))->unwrap() op static_cast<StoreInt*>(other->get_store("value"))->unwrap(); \
+	return result ? interpreter.fetch_global_object("True") : interpreter.fetch_global_object("False");
+
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> clone_object(Object *original, std::optional<std::variant<Register, std::string, uint32_t>> name, Interpreter&interpreter) {
 	std::string new_type = std::get<std::string>(*name);
 	if (std::isupper(new_type[0])) {
@@ -32,30 +42,38 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> clone
 	}
 }
 
-std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> object_equals(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> other, Interpreter &interpreter) {
-	Object *other_object;
-	if (std::get_if<Register>(&*other))
-		other_object = *std::get_if<Object*>(&interpreter.at(std::get<Register>(*other).get_index()));
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> object_equals(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	Object *other;
+	if (std::get_if<Register>(&*stamp))
+		other = *std::get_if<Object*>(&interpreter.at(std::get<Register>(*stamp).get_index()));
 	else
-		other_object = interpreter.fetch_object(std::get<std::string>(*other));
+		other = interpreter.fetch_object(std::get<std::string>(*stamp));
 
-	if (object->get_hash() == other_object->get_hash())
-		return interpreter.fetch_global_object("True");
-	else
-		return interpreter.fetch_global_object("False");
+	if (object->get_type() == "Int") {
+		int_compare(==)
+	} else {
+		if (object->get_hash() == other->get_hash())
+			return interpreter.fetch_global_object("True");
+		else
+			return interpreter.fetch_global_object("False");
+	}
 }
 
-std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> object_nequals(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> other, Interpreter &interpreter) {
-	Object *other_object;
-	if (std::get_if<Register>(&*other))
-		other_object = *std::get_if<Object*>(&interpreter.at(std::get<Register>(*other).get_index()));
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> object_nequals(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	Object *other;
+	if (std::get_if<Register>(&*stamp))
+		other = *std::get_if<Object*>(&interpreter.at(std::get<Register>(*stamp).get_index()));
 	else
-		other_object = interpreter.fetch_object(std::get<std::string>(*other));
+		other = interpreter.fetch_object(std::get<std::string>(*stamp));
 
-	if (object->get_hash() != other_object->get_hash())
-		return interpreter.fetch_global_object("True");
-	else
-		return interpreter.fetch_global_object("False");
+	if (object->get_type() == "Int") {
+		int_compare(!=)
+	} else {
+		if (object->get_hash() == other->get_hash())
+			return interpreter.fetch_global_object("False");
+		else
+			return interpreter.fetch_global_object("True");
+	}
 }
 
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> store_value(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> _stamp, Interpreter &) {
@@ -150,6 +168,160 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> call(
 	return object;
 }
 
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> mod(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_arithmetic(%)
+	} else {
+		terminating_error(StampError::DefaultStoreError, "% default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> mul(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_arithmetic(*)
+	} else {
+		terminating_error(StampError::DefaultStoreError, "* default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> divop(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_arithmetic(/)
+	} else {
+		terminating_error(StampError::DefaultStoreError, "/ default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> add(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_arithmetic(+)
+	} else {
+		terminating_error(StampError::DefaultStoreError, "+ default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> sub(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_arithmetic(-)
+	} else {
+		terminating_error(StampError::DefaultStoreError, "- default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> shl(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_arithmetic(<<)
+	} else {
+		terminating_error(StampError::DefaultStoreError, "<< default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> shr(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_arithmetic(>>)
+	} else {
+		terminating_error(StampError::DefaultStoreError, ">> default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> lop(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_compare(<)
+	} else {
+		terminating_error(StampError::DefaultStoreError, ">> default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> leop(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_compare(<=)
+	} else {
+		terminating_error(StampError::DefaultStoreError, ">> default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> gop(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_compare(>)
+	} else {
+		terminating_error(StampError::DefaultStoreError, ">> default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> geop(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_compare(>=)
+	} else {
+		terminating_error(StampError::DefaultStoreError, ">> default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> andop(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_arithmetic(&)
+	} else {
+		terminating_error(StampError::DefaultStoreError, "+ default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> xorop(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_arithmetic(^)
+	} else {
+		terminating_error(StampError::DefaultStoreError, "+ default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> orop(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
+	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
+	if (object->get_type() == "Int") {
+		int_arithmetic(|)
+	} else {
+		terminating_error(StampError::DefaultStoreError, "+ default store not implemented for " + object->get_type() + " and " + other->get_type() + ".");
+		Object *error = nullptr;
+		return error;
+	}
+}
+
 #define ENUMERATE_DEFAULT_STORES(DS) \
 	DS("clone", clone_object), \
 	DS("==", object_equals), \
@@ -161,7 +333,21 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> call(
 	DS("store_param", store_param), \
 	DS("pass_body", pass_body), \
 	DS("pass_param", pass_param), \
-	DS("call", call)
+	DS("call", call), \
+	DS("%", mod), \
+	DS("*", mul), \
+	DS("/", divop), \
+	DS("+", add), \
+	DS("-", sub), \
+	DS("<<", shl), \
+	DS(">>", shr), \
+    DS("<", lop), \
+	DS("<=", leop), \
+	DS(">", gop), \
+	DS(">=", geop), \
+	DS("&", andop), \
+	DS("><", xorop), \
+	DS("|", orop) \
 
 #define __ADD_DEFAULT_STORE(fn, fn_name) { fn, fn_name }
 std::map<std::string, std::function<std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*>(Object*,std::optional<std::variant<Register, std::string, uint32_t>>,Interpreter&)>>

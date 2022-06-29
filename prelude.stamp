@@ -5,6 +5,22 @@ False clone = False;
 
 Int = Object^;
 Int store_value = default;
+Int % = default;
+Int * = default;
+Int / = default;
+Int + = default;
+Int - = default;
+Int << = default;
+Int >> = default;
+Int < = default;
+Int <= = default;
+Int > = default;
+Int >= = default;
+Int != = default;
+Int == = default;
+Int & = default;
+Int >< = default;
+Int | = default;
 
 Char = Object^;
 Char store_value = default;

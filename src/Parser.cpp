@@ -617,8 +617,10 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 			children.push_back(previous_message);
 			children.push_back(new ASTNode(tok));
 			next_token();
-			auto next_message =  parse_message_tail(new ASTNode(Token(Token::Send, filename, line_number, position), children));
-			// Change order of messages based on precedence
+			if (tok.type != Token::Store) {
+				auto next_message = parse_message_tail(
+						new ASTNode(Token(Token::Send, filename, line_number, position), children));
+				// Change order of messages based on precedence
 //			if (previous_message->token.type && swap_precedence(previous_message->get_children()[1]->token.value, children[1]->token.value)) {
 //				auto prev = previous_message->get_children()[1];
 //				auto new_send = new ASTNode(Token { type: TokSend, value: "" }, vector<ASTNode *>{prev->get_children()[0], children[1]});
@@ -626,7 +628,24 @@ ASTNode *parse_message_tail(ASTNode *previous_message) {
 //				// FIXME: memory leak of the TokSend passed to parse_message_tail_above ?
 //				return children[0];
 //			}
-			return next_message;
+				return next_message;
+			}
+
+			children[1]->token.type = Token::Value;
+			next_token();
+			children.push_back(parse_rhs(children[1]));
+
+			// traverse the TokSend chain to check if the first send was a clone
+			// if so, add the name to it
+			auto rhs = children[2];
+			while (rhs->token.type == Token::Send && rhs->get_children()[0]->token.type == Token::Send) {
+				rhs = rhs->get_children()[0];
+			}
+			if (rhs->token.type == Token::Send && rhs->get_children().size() != 0 && rhs->get_children()[1]->token.value == "clone") {
+				rhs->get_children()[1]->get_children().push_back(new ASTNode(Token(Token::Value, children[1]->token.value, filename, line_number, position)));
+			}
+
+			return new ASTNode(Token(Token::Store, filename, line_number, position), children);
 		}
 		case Token::OpenParend: {
 			next_token(); // (

@@ -159,6 +159,7 @@ public:
 
 	std::string get_type() const { return type; }
 	uint32_t get_hash() const { return hash; }
+	Object *get_prototype() const { return prototype; }
 
 	std::string to_string() const;
 private:
