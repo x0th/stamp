@@ -155,10 +155,13 @@ private:
 
 class JumpSaved final : public Instruction {
 public:
-	JumpSaved() : Instruction(Type::JumpSaved) {}
+	JumpSaved() : Instruction(Type::JumpSaved), retval({}) {}
+	JumpSaved(std::optional<Register> retval) : Instruction(Type::JumpSaved), retval(retval) {}
 	static JumpSaved *from_file(std::ifstream &infile);
 
 	std::string to_string() const;
 	void execute(Interpreter &interpreter);
 	void to_file(std::ofstream &outfile, uint8_t code) const;
+private:
+	std::optional<Register> retval;
 };

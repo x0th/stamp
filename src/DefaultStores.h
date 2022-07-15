@@ -168,6 +168,16 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> call(
 	return object;
 }
 
+std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> get_return_value(Object *, std::optional<std::variant<Register, std::string, uint32_t>>, Interpreter &interpreter) {
+	auto retval = interpreter.pop_retval();
+	if (retval)
+		return interpreter.at((*retval).get_index());
+	else {
+		Object *out = nullptr;
+		return out;
+	}
+}
+
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> mod(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
 	auto other = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
 	if (object->get_type() == "Int") {
@@ -334,6 +344,7 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> orop(
 	DS("pass_body", pass_body), \
 	DS("pass_param", pass_param), \
 	DS("call", call), \
+    DS("get_return_value", get_return_value), \
 	DS("%", mod), \
 	DS("*", mul), \
 	DS("/", divop), \

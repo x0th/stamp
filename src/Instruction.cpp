@@ -81,6 +81,7 @@ void JumpFalse::execute(Interpreter &interpreter) {
 }
 
 void JumpSaved::execute(Interpreter &interpreter) {
+	interpreter.push_retval(retval);
 	interpreter.jump_saved_bb();
 }
 
@@ -168,6 +169,9 @@ std::string JumpFalse::to_string() const {
 std::string JumpSaved::to_string() const {
 	std::stringstream s;
 	s << "JumpSaved";
+	if (retval) {
+		s << " " << std::to_string((*retval).get_index());
+	}
 	return s.str();
 }
 
@@ -269,6 +273,10 @@ void JumpFalse::to_file(std::ofstream &outfile, uint8_t code) const {
 
 void JumpSaved::to_file(std::ofstream &outfile, uint8_t code) const {
 	outfile.write(reinterpret_cast<char*>(&code), sizeof(uint8_t));
+	// FIXME: this assumes that 0 is never the return register
+	// FIXME: which is always true in the current implementation but might not be in the future
+	auto ret = retval ? (*retval).get_index() : 0;
+	outfile.write(reinterpret_cast<char*>(&ret), sizeof(uint8_t));
 }
 
 Instruction* Instruction::from_file(std::ifstream &infile, uint8_t code) {
@@ -396,6 +404,13 @@ JumpFalse *JumpFalse::from_file(std::ifstream &infile) {
 	return jump;
 }
 
-JumpSaved *JumpSaved::from_file(std::ifstream &) {
-	return new JumpSaved();
+JumpSaved *JumpSaved::from_file(std::ifstream &infile) {
+	// FIXME: this assumes that 0 is never the return register
+	// FIXME: which is always true in the current implementation but might not be in the future
+	uint32_t ret;
+	infile.read(reinterpret_cast<char*>(&ret), sizeof(uint32_t));
+	if (ret == 0)
+		return new JumpSaved;
+	else
+		return new JumpSaved(Register(ret));
 }

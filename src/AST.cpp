@@ -86,12 +86,26 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 				generator.append<Send>(temp_register, last_register, "pass_param", stamp);
 				last_register = temp_register;
 			}
-			auto final = generator.next_register();
 			std::optional<Register> stamp = {};
-			generator.append<Send>(final, last_register, "call", stamp);
+			auto call_result = generator.next_register();
+			generator.append<Send>(call_result, last_register, "call", stamp);
+			auto final = generator.next_register();
 			generator.add_basic_block();
+			generator.append<Send>(final, call_result, "get_return_value", stamp);
 			return final;
-		};
+		}
+		case Token::Return: {
+			for (int i = generator.get_num_scopes() - 1; i >= 0; i--) {
+				auto lscope = generator.get_scope(i);
+				if (lscope->can_return) {
+					auto child_register = children[0]->generate_bytecode(generator);
+					generator.append<JumpSaved>(child_register);
+					return child_register;
+				}
+			}
+			terminating_error(StampError::BytecodeGenerationError, token.position() + ": return used outside of function.");
+			break;
+		}
 		case Token::If: {
 			auto condition = children[0]->generate_bytecode(generator);
 			auto ji = generator.append<JumpFalse>(*condition);

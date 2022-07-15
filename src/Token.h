@@ -41,7 +41,8 @@
 	T(Continue) \
 	T(Mut) \
 	T(Vec) \
-	T(Use)
+	T(Use) \
+	T(Return)
 
 class Token
 {

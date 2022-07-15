@@ -28,6 +28,10 @@ public:
 	void run();
 
 	void store_at(uint32_t register_index, std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> value) {
+		// if register index is beyond the current allocated registers, fill the register vector
+		for (long unsigned int i = reg_values.size(); i < (long unsigned int) register_index; i++)
+			reg_values.push_back(std::nullopt);
+
 		auto it = reg_values.begin() + register_index;
 		reg_values.insert(it, value);
 	}
@@ -40,7 +44,9 @@ public:
 	}
 
 	std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> &at(uint32_t register_index) {
-		return reg_values[register_index];
+		if (!reg_values[register_index])
+			terminating_error(StampError::ExecutionError, "Attempted to read an empty register.");
+		return *reg_values[register_index];
 	}
 
 	inline void jump_bb(uint32_t bb_index) {
@@ -54,6 +60,13 @@ public:
 
 	inline void jump_saved_bb() {
 		uint32_t bb_index = saved_bbs[saved_bbs.size() - 1];
+		// remove all scopes that (lexically) end at the current basic block
+		while(true) {
+			if (!scopes.is_empty() && scopes.lexical_scopes.back()->ends_at(current_bb))
+				scopes.pop_scope();
+			else
+				break;
+		}
 		saved_bbs.pop_back();
 		jump_bb(bb_index);
 	}
@@ -75,6 +88,21 @@ public:
 			global_scope.contexts[0]->add(name, object);
 		else
 			scopes.contexts[scopes.contexts.size() - 1]->add(name, object);
+	}
+
+	void push_retval(std::optional<Register> ret) {
+		// FIXME: if this fails for some reason (e.g. multithreading), the data structure for return value should be changed
+		if (retval) {
+			terminating_error(StampError::ExecutionError, "A previous return value would be overwritten.");
+			return;
+		}
+		retval = ret;
+	}
+
+	std::optional<Register> pop_retval() {
+		auto ret = retval;
+		retval = {};
+		return ret;
 	}
 
 	Object *fetch_object(std::string &name);
@@ -109,9 +137,10 @@ private:
 	bool should_terminate_bb = { false };
 	uint32_t current_bb = { 0 };
 	Generator &generator;
-	std::vector<std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*>> reg_values;
+	std::vector<std::optional<std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*>>> reg_values;
 	Scopes scopes;
 	Scopes global_scope;
 	bool in_global_scope = { false };
 	std::vector<uint32_t> saved_bbs;
+	std::optional<Register> retval;
 };

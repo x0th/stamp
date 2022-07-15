@@ -54,6 +54,7 @@ std::string Token::token_readable() const {
 		case Mut: return "mut";
 		case Vec: return "Vec";
 		case Use: return "use";
+		case Return: return "return";
 	}
 	return "";
 }

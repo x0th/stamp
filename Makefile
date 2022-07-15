@@ -17,6 +17,7 @@ src/%.o: src/%.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 prelude:
+	rm prelude.ostamp
 	./stamp -o prelude.stamp
 
 clean:

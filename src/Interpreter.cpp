@@ -78,14 +78,19 @@ void Interpreter::dump() {
 	for (long unsigned int i = 0; i < reg_values.size(); i++) {
 		auto r = reg_values[i];
 		std::cout << "r" << i << " ";
-		auto *str = std::get_if<std::string>(&r);
-		if (str) {
-			std::cout << *str << "\n";
+
+		if (r) {
+			auto *str = std::get_if<std::string>(&*r);
+			if (str) {
+				std::cout << *str << "\n";
+			} else {
+				auto obj = std::get<Object *>(*r);
+				if (obj)
+					std::cout << obj->to_string();
+				std::cout << "\n";
+			}
 		} else {
-			auto obj = std::get<Object*>(r);
-			if (obj)
-				std::cout << obj->to_string();
-			std::cout << "\n";
+			std::cout << "EMPTY\n";
 		}
 	}
 }

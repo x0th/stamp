@@ -34,6 +34,7 @@ ASTNode *parse_else_tail();
 ASTNode *parse_while();
 ASTNode *parse_vec(ASTNode *list);
 ASTNode *parse_use();
+ASTNode *parse_return();
 
 // FIXME: change all errors to be hinting errors when we implement error recovery
 
@@ -128,6 +129,7 @@ void parse_statement_list(ASTNode *s) {
 		case Token::Break:
 		case Token::Continue:
 		case Token::Mut:
+		case Token::Return:
 		{
 			st = parse_statement();
 			if (st) {
@@ -235,6 +237,9 @@ ASTNode *parse_statement() {
 		}
 		case Token::While: {
 			return parse_while();
+		}
+		case Token::Return: {
+			return parse_return();
 		}
 		case Token::Message: {
 			if (!is_operator(tok.value)) {
@@ -592,6 +597,19 @@ inline bool swap_precedence(std::string &old_operator, std::string &new_operator
 //	if (precedence_old <= precedence_new)
 //		return false;
 	return true;
+}
+
+ASTNode *parse_return() {
+	switch (tok.type) {
+		case Token::Return: {
+			auto ast = new ASTNode(tok);
+			next_token();
+			ast->get_children().push_back(parse_statement_rhs());
+			return ast;
+		}
+		default:
+			throw error_msg("Expected return. Found: " + tok.token_readable() + ".");
+	}
 }
 
 ASTNode *parse_message_tail(ASTNode *previous_message) {
