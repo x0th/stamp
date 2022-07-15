@@ -45,7 +45,7 @@ public:
 
 	std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> &at(uint32_t register_index) {
 		if (!reg_values[register_index])
-			terminating_error(StampError::ExecutionError, "Attempted to read an empty register.");
+			terminating_error(StampError::ExecutionError, "Attempted to read an empty register: " + std::to_string(register_index) + ".");
 		return *reg_values[register_index];
 	}
 

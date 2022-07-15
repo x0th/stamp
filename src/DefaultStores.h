@@ -149,7 +149,11 @@ std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> pass_
 
 std::variant<Object *, std::string, int32_t, std::vector<InternalStore*>*> pass_param(Object *object, std::optional<std::variant<Register, std::string, uint32_t>> stamp, Interpreter &interpreter) {
 	uint32_t bb_index = static_cast<StoreRegister*>(object->get_store("body"))->unwrap();
-	auto param = interpreter.fetch_object(std::get<std::string>(*stamp));
+	Object *param;
+	if (std::holds_alternative<std::string>(*stamp))
+		param = interpreter.fetch_object(std::get<std::string>(*stamp));
+	else
+		param = std::get<Object *>(interpreter.at(std::get<Register>(*stamp).get_index()));
 	auto num_passed_params_obj = static_cast<StoreObject*>(object->get_store("num_passed_params"))->unwrap();
 	auto param_names = static_cast<StoreObject*>(object->get_store("param_names"))->unwrap();
 	auto this_param_name_obj = std::get<Object*>(get(param_names, interpreter.store_at_next_available(num_passed_params_obj), interpreter));

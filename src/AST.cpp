@@ -81,10 +81,17 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 		case Token::FnCall: {
 			auto last_register = *children[0]->generate_bytecode(generator);
 			for (long unsigned int i = 1; i < children.size(); i++) {
-				std::optional<std::string> stamp = children[i]->token.value;
-				auto temp_register = generator.next_register();
-				generator.append<Send>(temp_register, last_register, "pass_param", stamp);
-				last_register = temp_register;
+				if (children[i]->token.type == Token::Object || children[i]->token.type == Token::Value) {
+					std::optional<std::string> stamp = children[i]->token.value;
+					auto temp_register = generator.next_register();
+					generator.append<Send>(temp_register, last_register, "pass_param", stamp);
+					last_register = temp_register;
+				} else {
+					std::optional<Register> stamp = children[i]->generate_bytecode(generator);
+					auto temp_register = generator.next_register();
+					generator.append<Send>(temp_register, last_register, "pass_param", stamp);
+					last_register = temp_register;
+				}
 			}
 			std::optional<Register> stamp = {};
 			auto call_result = generator.next_register();
@@ -100,6 +107,7 @@ std::optional<Register> ASTNode::generate_bytecode(Generator &generator) {
 				if (lscope->can_return) {
 					auto child_register = children[0]->generate_bytecode(generator);
 					generator.append<JumpSaved>(child_register);
+					generator.add_basic_block();
 					return child_register;
 				}
 			}
